@@ -309,8 +309,8 @@ config EXTRA_EXCEPTION_INFO
 	  register state, when a fault occurs. This information can be useful
 	  to collect for post-mortem analysis and debug of issues.
 
-config RISCV_PMP
-	bool "RISC-V PMP Support"
+config RISCV_SPMP
+	bool "RISC-V SPMP Support"
 	select THREAD_STACK_INFO
 	select CPU_HAS_MPU
 	select ARCH_HAS_USERSPACE
@@ -325,65 +325,72 @@ config RISCV_PMP
 	help
 	  MCU implements Physical Memory Protection.
 
-if RISCV_PMP
+if RISCV_SPMP
 
-config PMP_SLOTS
-	int "Number of PMP slots"
-	default 8
+config SPMP_SLOTS
+	int "Number of SPMP slots"
+	default 16
 	help
-	  This is the number of PMP entries implemented by the hardware.
+	  This is the number of SPMP entries implemented by the hardware.
 	  Typical values are 8 or 16.
 
-config PMP_NO_TOR
+config SPMP_SLOTS
+	int "Number of SPMP slots"
+	default 64
+	help
+	  This is the number of SPMP entries implemented by the hardware.
+	  Typical values are 8 or 16 or 64.
+
+config SPMP_NO_TOR
 	bool
 	help
 	  Set this if TOR (Top Of Range) mode is not supported.
 
-config PMP_NO_NA4
+config SPMP_NO_NA4
 	bool
 	help
 	  Set this if NA4 (Naturally Aligned 4-byte) mode is not supported.
 
-config PMP_NO_NAPOT
+config SPMP_NO_NAPOT
 	bool
 	help
 	  Set this if NAPOT (Naturally Aligned Power Of Two) is not supported.
 
-config PMP_POWER_OF_TWO_ALIGNMENT
-	bool "Enforce power-of-two alignment on PMP memory areas" if !PMP_NO_TOR
+config SPMP_POWER_OF_TWO_ALIGNMENT
+	bool "Enforce power-of-two alignment on SPMP memory areas" if !SPMP_NO_TOR
 	default y if TEST_USERSPACE
-	default y if (PMP_SLOTS = 8)
-	default y if PMP_NO_TOR
+	default y if (SPMP_SLOTS = 8)
+	default y if SPMP_NO_TOR
 	select MPU_REQUIRES_POWER_OF_TWO_ALIGNMENT
 	select GEN_PRIV_STACKS
 	help
-	  This option reduces the PMP slot usage but increases
+	  This option reduces the SPMP slot usage but increases
 	  memory consumption. Useful when enabling userspace mode with
-	  many memory domains and/or few PMP slots available.
+	  many memory domains and/or few SPMP slots available.
 
-config PMP_GRANULARITY
-	int "The granularity of PMP address matching"
-	default 8 if (PMP_NO_TOR && PMP_NO_NA4)
+config SPMP_GRANULARITY
+	int "The granularity of SPMP address matching"
+	default 8 if (SPMP_NO_TOR && SPMP_NO_NA4)
 	default 4
 	help
 	  The granularity must be a power of 2 greater than or equal to 4
 	  (ie 4, 8, 16, ...), but if neither TOR mode nor NA4 mode is
 	  supported, the minimum granularity is 8.
 
-endif #RISCV_PMP
+endif #RISCV_SPMP
 
-config PMP_STACK_GUARD
+config SPMP_STACK_GUARD
 	def_bool y
 	depends on HW_STACK_PROTECTION
 
-config PMP_STACK_GUARD_MIN_SIZE
+config SPMP_STACK_GUARD_MIN_SIZE
 	int "Stack Guard area size"
-	depends on PMP_STACK_GUARD
+	depends on SPMP_STACK_GUARD
 	default 1024 if 64BIT
 	default 512
 	help
 	  The Hardware Stack Protection implements a guard area at the bottom
-	  of the stack using the PMP to catch stack overflows by marking that
+	  of the stack using the SPMP to catch stack overflows by marking that
 	  guard area not accessible.
 
 	  This is the size of the guard area. This should be large enough to
@@ -392,25 +399,25 @@ config PMP_STACK_GUARD_MIN_SIZE
 	  stack usage.
 
 # Implement the null pointer detection using the Physical Memory Protection
-# (PMP) Unit.
-config NULL_POINTER_EXCEPTION_DETECTION_PMP
-	bool "Use PMP for null pointer exception detection"
-	depends on RISCV_PMP
+# (SPMP) Unit.
+config NULL_POINTER_EXCEPTION_DETECTION_SPMP
+	bool "Use SPMP for null pointer exception detection"
+	depends on RISCV_SPMP
 	help
 	  Null pointer dereference detection implemented
-	  using PMP functionality.
+	  using SPMP functionality.
 
-if NULL_POINTER_EXCEPTION_DETECTION_PMP
+if NULL_POINTER_EXCEPTION_DETECTION_SPMP
 
 config NULL_POINTER_EXCEPTION_REGION_SIZE
 	hex "Inaccessible region to implement null pointer detection"
 	default 0x10
 	help
-	  Use a PMP slot to make region (starting at address 0x0) inaccessible for
+	  Use a SPMP slot to make region (starting at address 0x0) inaccessible for
 	  detecting null pointer dereferencing (raising a CPU access fault).
 	  Minimum is 4 bytes.
 
-endif # NULL_POINTER_EXCEPTION_DETECTION_PMP
+endif # NULL_POINTER_EXCEPTION_DETECTION_SPMP
 
 config RISCV_IMPRECISE_FPU_STATE_TRACKING
 	bool "Imprecise implementation of FPU state tracking"
@@ -425,7 +432,7 @@ endmenu
 
 config MAIN_STACK_SIZE
 	default 4096 if 64BIT
-	default 2048 if PMP_STACK_GUARD
+	default 2048 if SPMP_STACK_GUARD
 
 config TEST_EXTRA_STACK_SIZE
 	default 1536

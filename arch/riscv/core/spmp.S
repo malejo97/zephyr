@@ -9,60 +9,60 @@
 #include <zephyr/arch/cpu.h>
 #include "asm_macros.inc"
 
-#define CSR_PMPCFG_BASE  0x3a0
-#define CSR_PMPADDR_BASE 0x3b0
+#define CSR_SPMPCFG_BASE  0x500
+#define CSR_SPMPADDR_BASE 0x510
 
 /*
  * Prototype:
  *
- * void z_riscv_write_pmp_entries(unsigned int start,		// a0
+ * void z_riscv_write_spmp_entries(unsigned int start,		// a0
  *                                unsigned int end,		// a1
  *                                bool clear_trailing_entries,	// a2
- *                                unsigned long *pmp_addr,		// a3
- *                                unsigned long *pmp_cfg)		// a4
+ *                                unsigned long *spmp_addr,		// a3
+ *                                unsigned long *spmp_cfg)		// a4
  *
- * Called from pmp.c to write a range of PMP entries.
+ * Called from spmp.c to write a range of SPMP entries.
  *
- * PMP registers are accessed with the csr instruction which only takes an
+ * SPMP registers are accessed with the csr instruction which only takes an
  * immediate value as the actual register. In order to avoid traversing
  * the whole register list, we use the start index to jump directly to the
  * location corresponding to the start of the wanted range. For this to work
  * we disallow compressed instructions so the update block sizes are easily
  * known (luckily they're all power-of-2's simplifying the code further).
  *
- * start < end && end <= CONFIG_PMP_SLOTS must be true.
+ * start < end && end <= CONFIG_SPMP_SLOTS must be true.
  */
 
-GTEXT(z_riscv_write_pmp_entries)
-SECTION_FUNC(TEXT, z_riscv_write_pmp_entries)
+GTEXT(z_riscv_write_spmp_entries)
+SECTION_FUNC(TEXT, z_riscv_write_spmp_entries)
 
-	la t0, pmpaddr_store
+	la t0, spmpaddr_store
 	slli t1, a0, 4  /* 16-byte instruction blocks */
 	add t0, t0, t1
 	jr t0
 
-pmpaddr_store:
+spmpaddr_store:
 
 	.option push
 	.option norvc
 	.set _index, 0
-	.rept CONFIG_PMP_SLOTS
+	.rept CONFIG_SPMP_SLOTS
 	lr t0, (RV_REGSIZE * _index)(a3)
 	li t1, _index + 1
-	csrw (CSR_PMPADDR_BASE + _index), t0
-	beq t1, a1, pmpaddr_done
+	csrw (CSR_SPMPADDR_BASE + _index), t0
+	beq t1, a1, spmpaddr_done
 	.set _index, _index + 1
 	.endr
 	.option pop
 
-pmpaddr_done:
+spmpaddr_done:
 
 	/*
-	 * Move to the pmpcfg space:
+	 * Move to the spmpcfg space:
 	 * a0 = a0 / RV_REGSIZE
 	 * a1 = (a1 + RV_REGSIZE - 1) / RV_REGSIZE
 	 */
-	la t0, pmpcfg_store
+	la t0, spmpcfg_store
 	srli a0, a0, RV_REGSHIFT
 	slli t1, a0, 4  /* 16-byte instruction blocks */
 	add t0, t0, t1
@@ -70,36 +70,36 @@ pmpaddr_done:
 	srli a1, a1, RV_REGSHIFT
 	jr t0
 
-pmpcfg_store:
+spmpcfg_store:
 
 	.option push
 	.option norvc
 	.set _index, 0
-	.rept (CONFIG_PMP_SLOTS / RV_REGSIZE)
+	.rept (CONFIG_SPMP_SLOTS / RV_REGSIZE)
 	lr t0, (RV_REGSIZE * _index)(a4)
 	addi a0, a0, 1
-	csrw (CSR_PMPCFG_BASE + RV_REGSIZE/4 * _index), t0
-	beq a0, a1, pmpcfg_done
+	csrw (CSR_SPMPCFG_BASE + RV_REGSIZE/4 * _index), t0
+	beq a0, a1, spmpcfg_done
 	.set _index, _index + 1
 	.endr
 	.option pop
 
-pmpcfg_done:
+spmpcfg_done:
 
 	beqz a2, done
 
-	la t0, pmpcfg_zerotail
+	la t0, spmpcfg_zerotail
 	slli a0, a0, 2  /* 4-byte instruction blocks */
 	add t0, t0, a0
 	jr t0
 
-pmpcfg_zerotail:
+spmpcfg_zerotail:
 
 	.option push
 	.option norvc
 	.set _index, 0
-	.rept (CONFIG_PMP_SLOTS / RV_REGSIZE)
-	csrw (CSR_PMPCFG_BASE + RV_REGSIZE/4 * _index), zero
+	.rept (CONFIG_SPMP_SLOTS / RV_REGSIZE)
+	csrw (CSR_SPMPCFG_BASE + RV_REGSIZE/4 * _index), zero
 	.set _index, _index + 1
 	.endr
 	.option pop

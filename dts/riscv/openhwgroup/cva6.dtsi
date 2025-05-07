@@ -33,9 +33,9 @@
 		ranges;
 
 		/* Xilinx MIG memory controller */
-		memory0: memory@80000000 {
+		memory0: memory@80200000 {
 			device_type = "memory";
-			reg = <0x80000000 0x40000000>;
+			reg = <0x80200000 0x3FE00000>;
 			status = "okay";
 		};
 

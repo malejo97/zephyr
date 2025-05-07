@@ -9,7 +9,7 @@
 #include <ksched.h>
 #include <zephyr/arch/riscv/csr.h>
 #include <stdio.h>
-#include <pmp.h>
+#include <spmp.h>
 
 #ifdef CONFIG_USERSPACE
 /*
@@ -63,19 +63,20 @@ void arch_new_thread(struct k_thread *thread, k_thread_stack_t *stack,
 	 *    counter will be restored following the MEPC value set within the
 	 *    thread stack.
 	 */
-	stack_init->mstatus = MSTATUS_DEF_RESTORE;
+	// exactly this is sstaus, but for convinience, we do not change the name of it
+	stack_init->mstatus = SSTATUS_DEF_RESTORE;
 
 #if defined(CONFIG_FPU_SHARING)
 	/* thread birth happens through the exception return path */
 	thread->arch.exception_depth = 1;
 #elif defined(CONFIG_FPU)
 	/* Unshared FP mode: enable FPU of each thread. */
-	stack_init->mstatus |= MSTATUS_FS_INIT;
+	stack_init->mstatus |= SSTATUS_FS_INIT;
 #endif
 
 #if defined(CONFIG_USERSPACE)
 	/* Clear user thread context */
-	z_riscv_pmp_usermode_init(thread);
+	z_riscv_spmp_usermode_init(thread);
 	thread->arch.priv_stack_start = 0;
 #endif /* CONFIG_USERSPACE */
 
@@ -89,18 +90,18 @@ void arch_new_thread(struct k_thread *thread, k_thread_stack_t *stack,
 		/* Supervisor thread */
 		stack_init->mepc = (unsigned long)z_thread_entry;
 
-#if defined(CONFIG_PMP_STACK_GUARD)
-		/* Enable PMP in mstatus.MPRV mode for RISC-V machine mode
+#if defined(CONFIG_SPMP_STACK_GUARD)
+		/* Enable SPMP in mstatus.MPRV mode for RISC-V machine mode
 		 * if thread is supervisor thread.
 		 */
-		stack_init->mstatus |= MSTATUS_MPRV;
-#endif /* CONFIG_PMP_STACK_GUARD */
+		// stack_init->mstatus |= MSTATUS_MPRV;
+#endif /* CONFIG_SPMP_STACK_GUARD */
 	}
 
-#if defined(CONFIG_PMP_STACK_GUARD)
-	/* Setup PMP regions of PMP stack guard of thread. */
-	z_riscv_pmp_stackguard_prepare(thread);
-#endif /* CONFIG_PMP_STACK_GUARD */
+#if defined(CONFIG_SPMP_STACK_GUARD)
+	/* Setup SPMP regions of SPMP stack guard of thread. */
+	z_riscv_spmp_stackguard_prepare(thread);
+#endif /* CONFIG_SPMP_STACK_GUARD */
 
 #ifdef CONFIG_RISCV_SOC_CONTEXT_SAVE
 	stack_init->soc_context = soc_esf_init;
@@ -164,26 +165,26 @@ FUNC_NORETURN void arch_user_mode_enter(k_thread_entry_t user_entry,
 				_current->stack_info.size -
 				_current->stack_info.delta);
 
-	status = csr_read(mstatus);
+	status = csr_read(sstatus);
 
 	/* Set next CPU status to user mode */
-	status = INSERT_FIELD(status, MSTATUS_MPP, PRV_U);
+	status = INSERT_FIELD(status, SSTATUS_SPP, PRV_U);
 	/* Enable IRQs for user mode */
-	status = INSERT_FIELD(status, MSTATUS_MPIE, 1);
+	status = INSERT_FIELD(status, SSTATUS_SPIE, 1);
 	/* Disable IRQs for m-mode until the mode switch */
-	status = INSERT_FIELD(status, MSTATUS_MIE, 0);
+	status = INSERT_FIELD(status, SSTATUS_SIE, 0);
 
-	csr_write(mstatus, status);
-	csr_write(mepc, z_thread_entry);
+	csr_write(sstatus, status);
+	csr_write(sepc, z_thread_entry);
 
-#ifdef CONFIG_PMP_STACK_GUARD
+#ifdef CONFIG_SPMP_STACK_GUARD
 	/* reconfigure as the kernel mode stack will be different */
-	z_riscv_pmp_stackguard_prepare(_current);
+	z_riscv_spmp_stackguard_prepare(_current);
 #endif
 
 	/* Set up Physical Memory Protection */
-	z_riscv_pmp_usermode_prepare(_current);
-	z_riscv_pmp_usermode_enable(_current);
+	z_riscv_spmp_usermode_prepare(_current);
+	z_riscv_spmp_usermode_enable(_current);
 
 	/* preserve stack pointer for next exception entry */
 	arch_curr_cpu()->arch.user_exc_sp = top_of_priv_stack;
@@ -196,7 +197,7 @@ FUNC_NORETURN void arch_user_mode_enter(k_thread_entry_t user_entry,
 	register void *a3 __asm__("a3") = p3;
 
 	__asm__ volatile (
-	"mv sp, %4; mret"
+	"mv sp, %4;sret"
 	:
 	: "r" (a0), "r" (a1), "r" (a2), "r" (a3), "r" (top_of_user_stack)
 	: "memory");

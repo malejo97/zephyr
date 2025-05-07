@@ -11,6 +11,7 @@ zephyr_library_sources(
   reset.S
   switch.S
   thread.c
+  sbi.c
 )
 
 if ((CONFIG_MP_MAX_NUM_CPUS GREATER 1) OR (CONFIG_SMP))
@@ -26,6 +27,7 @@ endif()
 zephyr_library_sources_ifdef(CONFIG_FPU_SHARING fpu.c fpu.S)
 zephyr_library_sources_ifdef(CONFIG_DEBUG_COREDUMP coredump.c)
 zephyr_library_sources_ifdef(CONFIG_IRQ_OFFLOAD irq_offload.c)
+zephyr_library_sources_ifdef(CONFIG_RISCV_SPMP spmp.c spmp.S)
 zephyr_library_sources_ifdef(CONFIG_GEN_SW_ISR_TABLE isr.S)
 zephyr_library_sources_ifdef(CONFIG_RISCV_PMP pmp.c pmp.S)
 zephyr_library_sources_ifdef(CONFIG_THREAD_LOCAL_STORAGE tls.c)

@@ -32,6 +32,8 @@ extern "C" {
 #define RISCV_EXC_ECALLU 8
 /** Environment Call from M-mode */
 #define RISCV_EXC_ECALLM 11
+/** Environment Call from S-mode */
+#define RISCV_EXC_ECALLS  9
 
 /* IRQs 0-15 (MCAUSE interrupt=1) */
 
@@ -39,6 +41,10 @@ extern "C" {
 #define RISCV_IRQ_MSOFT 3
 /** Machine External Interrupt */
 #define RISCV_IRQ_MEXT  11
+/* Supervisor Software Interrupt */
+#define RISCV_IRQ_SSOFT  1
+/** Supervisor External Interrupt */
+#define RISCV_IRQ_SEXT  9
 
 #ifdef CONFIG_64BIT
 #define RISCV_MCAUSE_IRQ_POS          63U
@@ -46,6 +52,14 @@ extern "C" {
 #else
 #define RISCV_MCAUSE_IRQ_POS          31U
 #define RISCV_MCAUSE_IRQ_BIT          BIT(RISCV_MCAUSE_IRQ_POS)
+#endif
+
+#ifdef CONFIG_64BIT
+#define RISCV_SCAUSE_IRQ_POS          63U
+#define RISCV_SCAUSE_IRQ_BIT          BIT64(RISCV_SCAUSE_IRQ_POS)
+#else
+#define RISCV_SCAUSE_IRQ_POS          31U
+#define RISCV_SCAUSE_IRQ_BIT          BIT(RISCV_SCAUSE_IRQ_POS)
 #endif
 
 #ifndef _ASMLANGUAGE

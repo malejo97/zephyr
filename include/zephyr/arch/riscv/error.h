@@ -16,6 +16,7 @@
 
 #include <zephyr/arch/riscv/syscall.h>
 #include <zephyr/arch/riscv/exception.h>
+#include <zephyr/arch/riscv/sbi.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -30,14 +31,14 @@ extern "C" {
 				K_SYSCALL_USER_FAULT);	\
 		} else {				\
 			compiler_barrier();		\
-			arch_syscall_invoke1(reason_p,	\
+			sbi_runtime_except(reason_p,	\
 				RV_ECALL_RUNTIME_EXCEPT);\
 		}					\
 		CODE_UNREACHABLE; /* LCOV_EXCL_LINE */	\
 	} while (false)
 #else
 #define ARCH_EXCEPT(reason_p) \
-	arch_syscall_invoke1(reason_p, RV_ECALL_RUNTIME_EXCEPT)
+	sbi_runtime_except(reason_p, RV_ECALL_RUNTIME_EXCEPT)
 #endif
 
 __syscall void user_fault(unsigned int reason);

@@ -25,17 +25,17 @@ FUNC_NORETURN void z_irq_spurious(const void *unused)
 
 	CODE_UNREACHABLE;
 #else
-	unsigned long mcause;
+	unsigned long scause;
 
 	ARG_UNUSED(unused);
 
-	mcause = csr_read(mcause);
+	scause = csr_read(scause);
 
-	mcause &= CONFIG_RISCV_MCAUSE_EXCEPTION_MASK;
+	scause &= CONFIG_RISCV_MCAUSE_EXCEPTION_MASK;
 
-	LOG_ERR("Spurious interrupt detected! IRQ: %ld", mcause);
+	LOG_ERR("Spurious interrupt detected! IRQ: %ld", scause);
 #if defined(CONFIG_RISCV_HAS_PLIC)
-	if (mcause == RISCV_IRQ_MEXT) {
+	if (scause == RISCV_IRQ_SEXT) {
 		unsigned int save_irq = riscv_plic_get_irq();
 		const struct device *save_dev = riscv_plic_get_dev();
 

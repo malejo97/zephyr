@@ -86,22 +86,21 @@ FUNC_NORETURN void z_riscv_fatal_error(unsigned int reason,
 FUNC_NORETURN void z_riscv_fatal_error_csf(unsigned int reason, const struct arch_esf *esf,
 					   const _callee_saved_t *csf)
 {
-	unsigned long mcause;
+	unsigned long scause;
 
-	__asm__ volatile("csrr %0, mcause" : "=r" (mcause));
+	__asm__ volatile("csrr %0, scause" : "=r" (scause));
 
-	mcause &= CONFIG_RISCV_MCAUSE_EXCEPTION_MASK;
+	scause &= CONFIG_RISCV_MCAUSE_EXCEPTION_MASK;
 	LOG_ERR("");
-	LOG_ERR(" mcause: %ld, %s", mcause, z_riscv_mcause_str(mcause));
+	LOG_ERR(" scause: %ld, %s", scause, z_riscv_mcause_str(scause));
 
 #ifndef CONFIG_SOC_OPENISA_RV32M1
-	unsigned long mtval;
+	unsigned long stval;
 
-	__asm__ volatile("csrr %0, mtval" : "=r" (mtval));
-	LOG_ERR("  mtval: %lx", mtval);
+	__asm__ volatile("csrr %0, stval" : "=r" (stval));
+	LOG_ERR("  stval: %lx", stval);
 #endif /* CONFIG_SOC_OPENISA_RV32M1 */
 
-#ifdef CONFIG_EXCEPTION_DEBUG
 	if (esf != NULL) {
 		LOG_ERR("     a0: " PR_REG "    t0: " PR_REG, esf->a0, esf->t0);
 		LOG_ERR("     a1: " PR_REG "    t1: " PR_REG, esf->a1, esf->t1);
@@ -138,7 +137,7 @@ FUNC_NORETURN void z_riscv_fatal_error_csf(unsigned int reason, const struct arc
 #endif /* CONFIG_RISCV_ISA_RV32E */
 		LOG_ERR("");
 	}
-#endif /* CONFIG_EXCEPTION_DEBUG */
+
 
 #ifdef CONFIG_EXCEPTION_STACK_TRACE
 	z_riscv_unwind_stack(esf, csf);
@@ -150,7 +149,7 @@ FUNC_NORETURN void z_riscv_fatal_error_csf(unsigned int reason, const struct arc
 
 static bool bad_stack_pointer(struct arch_esf *esf)
 {
-#ifdef CONFIG_PMP_STACK_GUARD
+#ifdef CONFIG_SPMP_STACK_GUARD
 	/*
 	 * Check if the kernel stack pointer prior this exception (before
 	 * storing the exception stack frame) was in the stack guard area.
@@ -187,7 +186,7 @@ static bool bad_stack_pointer(struct arch_esf *esf)
 		return true;
 	}
 #endif /* CONFIG_MULTITHREADING */
-#endif /* CONFIG_PMP_STACK_GUARD */
+#endif /* CONFIG_SPMP_STACK_GUARD */
 
 #ifdef CONFIG_USERSPACE
 	if ((esf->mstatus & MSTATUS_MPP) == 0 &&
@@ -207,7 +206,7 @@ void z_riscv_fault(struct arch_esf *esf)
 {
 #ifdef CONFIG_USERSPACE
 	/*
-	 * Perform an assessment whether an PMP fault shall be
+	 * Perform an assessment whether an SPMP fault shall be
 	 * treated as recoverable.
 	 */
 	for (int i = 0; i < ARRAY_SIZE(exceptions); i++) {

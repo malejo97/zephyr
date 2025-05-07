@@ -166,7 +166,8 @@ static inline mem_addr_t get_context_en_addr(const struct device *dev, uint32_t 
 #if CONFIG_MP_MAX_NUM_CPUS > 1
 	hartid = _kernel.cpus[cpu_num].arch.hartid;
 #else
-	hartid = arch_proc_id();
+	// hartid = arch_proc_id();
+	hartid = 0;
 #endif
 	return config->irq_en + get_hart_context(dev, hartid) * CONTEXT_ENABLE_SIZE;
 }

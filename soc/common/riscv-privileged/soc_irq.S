@@ -25,10 +25,10 @@ WTEXT(__soc_handle_irq)
  * Exception number is given as parameter via register a0.
  */
 SECTION_FUNC(exception.other, __soc_handle_irq)
-	/* Clear exception number from CSR mip register */
+	/* Clear exception number from CSR sip register */
 	li t1, 1
 	sll t0, t1, a0
-	csrrc t1, mip, t0
+	csrrc t1, sip, t0
 
 	/* Return */
 	ret

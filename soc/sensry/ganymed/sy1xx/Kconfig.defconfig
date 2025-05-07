@@ -3,7 +3,7 @@
 
 if SOC_SERIES_SY1XX
 
-config RISCV_PMP
+config RISCV_SPMP
 	default n
 
 config RISCV_HAS_CLIC

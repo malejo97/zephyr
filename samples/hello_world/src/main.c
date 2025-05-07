@@ -8,7 +8,7 @@
 
 int main(void)
 {
-	printf("Hello World! %s\n", CONFIG_BOARD_TARGET);
+	printf("\nHello World!\nRunning Zephyr S-mode on top of the %s\n", CONFIG_BOARD_TARGET);
 
 	return 0;
 }
