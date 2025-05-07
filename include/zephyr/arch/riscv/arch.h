@@ -158,6 +158,7 @@
  */
 
 #define MSTATUS_IEN     (1UL << 3)
+#define SSTATUS_IEN     (1UL << 1)
 #define MSTATUS_MPP_M   (3UL << 11)
 #define MSTATUS_MPIE_EN (1UL << 7)
 
@@ -165,6 +166,11 @@
 #define MSTATUS_FS_INIT  (1UL << 13)
 #define MSTATUS_FS_CLEAN (2UL << 13)
 #define MSTATUS_FS_DIRTY (3UL << 13)
+
+#define SSTATUS_SPIE_EN	 (1UL << 5)
+#define SSTATUS_SPP_S 	 (1UL << 8)
+#define SSTATUS_SPP_U	 (0UL << 8)
+#define SSTATUS_FS_INIT  (1UL << 13)
 
 /* This comes from openisa_rv32m1, but doesn't seem to hurt on other
  * platforms:
@@ -175,6 +181,7 @@
  *   by setting MPIE now, so it will be copied into IE on mret.
  */
 #define MSTATUS_DEF_RESTORE (MSTATUS_MPP_M | MSTATUS_MPIE_EN)
+#define SSTATUS_DEF_RESTORE (SSTATUS_SPP_S | SSTATUS_SPIE_EN)
 
 #ifndef _ASMLANGUAGE
 #include <zephyr/sys/util.h>
@@ -238,9 +245,9 @@ static ALWAYS_INLINE unsigned int arch_irq_lock(void)
 #else
 	unsigned int key;
 
-	__asm__ volatile ("csrrc %0, mstatus, %1"
+	__asm__ volatile ("csrrc %0, sstatus, %1"
 			  : "=r" (key)
-			  : "rK" (MSTATUS_IEN)
+			  : "rK" (SSTATUS_IEN)
 			  : "memory");
 
 	return key;
@@ -256,9 +263,9 @@ static ALWAYS_INLINE void arch_irq_unlock(unsigned int key)
 #ifdef CONFIG_RISCV_SOC_HAS_CUSTOM_IRQ_LOCK_OPS
 	z_soc_irq_unlock(key);
 #else
-	__asm__ volatile ("csrs mstatus, %0"
+	__asm__ volatile ("csrs sstatus, %0"
 			  :
-			  : "r" (key & MSTATUS_IEN)
+			  : "r" (key & SSTATUS_IEN)
 			  : "memory");
 #endif
 }

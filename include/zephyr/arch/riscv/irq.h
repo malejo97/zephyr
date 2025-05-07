@@ -48,6 +48,14 @@ extern "C" {
 #define RISCV_MCAUSE_IRQ_BIT          BIT(RISCV_MCAUSE_IRQ_POS)
 #endif
 
+#ifdef CONFIG_64BIT
+#define RISCV_SCAUSE_IRQ_POS          63U
+#define RISCV_SCAUSE_IRQ_BIT          BIT64(RISCV_SCAUSE_IRQ_POS)
+#else
+#define RISCV_SCAUSE_IRQ_POS          31U
+#define RISCV_SCAUSE_IRQ_BIT          BIT(RISCV_SCAUSE_IRQ_POS)
+#endif
+
 #ifndef _ASMLANGUAGE
 
 extern void arch_irq_enable(unsigned int irq);

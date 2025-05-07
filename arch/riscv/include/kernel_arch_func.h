@@ -24,18 +24,19 @@
 extern "C" {
 #endif
 
+extern int boot_hart_id;
+
 #ifndef _ASMLANGUAGE
 
-static ALWAYS_INLINE void arch_kernel_init(void)
-{
+static ALWAYS_INLINE void arch_kernel_init(void) {
 #ifdef CONFIG_THREAD_LOCAL_STORAGE
 	__asm__ volatile ("li tp, 0");
 #endif
 #if defined(CONFIG_SMP) || defined(CONFIG_USERSPACE)
-	csr_write(mscratch, &_kernel.cpus[0]);
+	csr_write(sscratch, &_kernel.cpus[0]);
 #endif
 #ifdef CONFIG_SMP
-	_kernel.cpus[0].arch.hartid = csr_read(mhartid);
+	_kernel.cpus[0].arch.hartid = boot_hart_id;
 	_kernel.cpus[0].arch.online = true;
 #endif
 #if ((CONFIG_MP_MAX_NUM_CPUS) > 1)
@@ -53,7 +54,7 @@ static ALWAYS_INLINE void arch_kernel_init(void)
 	}
 #endif
 #ifdef CONFIG_RISCV_PMP
-	z_riscv_pmp_init();
+	// z_riscv_pmp_init();
 #endif
 #ifdef CONFIG_SOC_PER_CORE_INIT_HOOK
 	soc_per_core_init_hook();
@@ -61,12 +62,11 @@ static ALWAYS_INLINE void arch_kernel_init(void)
 }
 
 static ALWAYS_INLINE void
-arch_switch(void *switch_to, void **switched_from)
-{
-	extern void z_riscv_switch(struct k_thread *new, struct k_thread *old);
-	struct k_thread *new = switch_to;
-	struct k_thread *old = CONTAINER_OF(switched_from, struct k_thread,
-					    switch_handle);
+arch_switch(void *switch_to, void **switched_from) {
+    extern void z_riscv_switch(struct k_thread *new, struct k_thread * old);
+    struct k_thread *new = switch_to;
+    struct k_thread *old = CONTAINER_OF(switched_from, struct k_thread,
+                                        switch_handle);
 #ifdef CONFIG_RISCV_ALWAYS_SWITCH_THROUGH_ECALL
 	arch_syscall_invoke2((uintptr_t)new, (uintptr_t)old, RV_ECALL_SCHEDULE);
 #else

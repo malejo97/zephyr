@@ -37,8 +37,8 @@ SECTION_FUNC(vectors, __start)
 	/*
 	 * CLIC vectored mode
 	 *
-	 * CLIC vectored mode uses mtvec exclusively for exception handling and
-	 * mtvec.base must be aligned to 64 bytes (this is done using
+	 * CLIC vectored mode uses stvec exclusively for exception handling and
+	 * stvec.base must be aligned to 64 bytes (this is done using
 	 * CONFIG_RISCV_TRAP_HANDLER_ALIGNMENT)
 	 */
 #if defined(CONFIG_GEN_SW_ISR_TABLE)
@@ -47,7 +47,7 @@ SECTION_FUNC(vectors, __start)
 	add t0, zero, zero
 #endif
 	addi t0, t0, 0x03 /* Enable CLIC vectored mode by setting LSB */
-	csrw mtvec, t0
+	csrw stvec, t0
 
 	/*
 	 * CLIC vectored mode has a similar concept to CLINT vectored mode,
@@ -69,7 +69,7 @@ SECTION_FUNC(vectors, __start)
 	/*
 	 * CLINT vectored mode
 	 *
-	 * Set mtvec (Machine Trap-Vector Base-Address Register)
+	 * Set stvec (Machine Trap-Vector Base-Address Register)
 	 * to _irq_vector_table (interrupt vector table). Add 1 to base
 	 * address of _irq_vector_table to indicate that vectored mode
 	 * is used (LSB = 0x1). CPU will mask the LSB out of
@@ -80,7 +80,7 @@ SECTION_FUNC(vectors, __start)
 	 */
 	la t0, _irq_vector_table /* Load address of interrupt vector table */
 	addi t0, t0, 0x01 /* Enable vectored mode by setting LSB */
-	csrw mtvec, t0
+	csrw stvec, t0
 
 #endif /* CONFIG_RISCV_HAS_CLIC */
 
@@ -90,18 +90,18 @@ SECTION_FUNC(vectors, __start)
 
 	la t0, _isr_wrapper
 	addi t0, t0, 0x03 /* Set mode bits to 3, signifying CLIC. Everything else is reserved. */
-	csrw mtvec, t0
+	csrw stvec, t0
 
 #else /* !CONFIG_RISCV_HAS_CLIC || CONFIG_LEGACY_CLIC */
 
 	/*
 	 * CLINT direct mode
 	 *
-	 * Set mtvec (Machine Trap-Vector Base-Address Register)
+	 * Set stvec (Machine Trap-Vector Base-Address Register)
 	 * to _isr_wrapper.
 	 */
 	la t0, _isr_wrapper
-	csrw mtvec, t0
+	csrw stvec, t0
 
 #endif /* CONFIG_RISCV_HAS_CLIC&& !CONFIG_LEGACY_CLIC */
 

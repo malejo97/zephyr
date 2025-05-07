@@ -11,6 +11,10 @@
 #include <zephyr/offsets.h>
 #include "asm_macros.inc"
 
+.globl boot_hart_id
+boot_hart_id:
+    .word -1   # initialized with-1
+
 /* exports */
 GTEXT(__initialize)
 GTEXT(__reset)
@@ -37,27 +41,37 @@ SECTION_FUNC(reset, __reset)
  * Remainder of asm-land initialization code before we can jump into
  * the C domain
  */
+ /*
+	Global variable boot_hart_id is initialized with -1 and will later 
+	save the boot hart id which is chosen by Opensbi. 
+	Opensbi will set the boot hart id in a0 register before jumping to the kernel.
+	When a hart find boot_hart_id=-1, it will save the boot hart id in boot_hart_id 
+	and jump to boot_first_core.
+	Otherwise, it will jump to boot_secondary_core.
+ */
 SECTION_FUNC(TEXT, __initialize)
-	csrr a0, mhartid
-	li t0, CONFIG_RV_BOOT_HART
-	beq a0, t0, boot_first_core
+	la t0, boot_hart_id
+	lw t0, 0(t0)
+	bltz t0, boot_first_core
 	j boot_secondary_core
 
 boot_first_core:
+	la t0, boot_hart_id
+	sw a0, 0(t0)
 
-#ifdef CONFIG_FPU
-	/*
-	 * Enable floating-point.
-	 */
-	li t0, MSTATUS_FS_INIT
-	csrs mstatus, t0
+# #ifdef CONFIG_FPU
+# 	/*
+# 	 * Enable floating-point.
+# 	 */
+# 	li t0, MSTATUS_FS_INIT
+# 	csrs mstatus, t0
 
-	/*
-	 * Floating-point rounding mode set to IEEE-754 default, and clear
-	 * all exception flags.
-	 */
-	fscsr zero
-#endif
+# 	/*
+# 	 * Floating-point rounding mode set to IEEE-754 default, and clear
+# 	 * all exception flags.
+# 	 */
+# 	fscsr zero
+# #endif
 
 #ifdef CONFIG_INIT_STACKS
 	/* Pre-populate all bytes in z_interrupt_stacks with 0xAA */
