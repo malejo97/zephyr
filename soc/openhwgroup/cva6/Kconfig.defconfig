@@ -26,6 +26,9 @@ config MAX_IRQ_PER_AGGREGATOR
 config NUM_IRQS
 	default 42
 
+config SPMP_SLOTS
+	default 16
+
 config MULTI_LEVEL_INTERRUPTS
 	default y
 

@@ -85,8 +85,8 @@
 #define RAM_BASE CONFIG_SRAM_BASE_ADDRESS
 #define RAM_SIZE KB(CONFIG_SRAM_SIZE)
 
-#ifdef CONFIG_RISCV_PMP
-	#define MPU_MIN_SIZE CONFIG_PMP_GRANULARITY
+#ifdef CONFIG_RISCV_SPMP
+	#define MPU_MIN_SIZE CONFIG_SPMP_GRANULARITY
 	#define MPU_MIN_SIZE_ALIGN . = ALIGN(MPU_MIN_SIZE);
 	#if defined(CONFIG_MPU_REQUIRES_POWER_OF_TWO_ALIGNMENT)
 		#define MPU_ALIGN(region_size) \
@@ -223,7 +223,7 @@ SECTIONS
 	 * RAMABLE_REGION in it.
 	 */
 #ifndef CONFIG_XIP
-#ifdef CONFIG_RISCV_PMP
+#ifdef CONFIG_RISCV_SPMP
 	SECTION_PROLOGUE(rom_mpu_padding,,)
 	{
 		MPU_ALIGN(__rodata_region_end - __rom_region_start);
@@ -232,12 +232,12 @@ SECTIONS
 		 * QEMU doesn't vet each instruction fetch individually.
 		 * Instead, it grabs a whole page and perform dynamic
 		 * translation on it in a batch. It therefore validates
-		 * PMP permissions using page-sized and -aligned chunks.
+		 * SPMP permissions using page-sized and -aligned chunks.
 		 */
 		. = ALIGN(0x1000);
 #endif
 	} GROUP_LINK_IN(ROMABLE_REGION)
-#endif /* CONFIG_RISCV_PMP */
+#endif /* CONFIG_RISCV_SPMP */
 
 	__rom_region_end = .;
 	__rom_region_size = __rom_region_end - __rom_region_start;
@@ -458,8 +458,8 @@ SECTION_PROLOGUE(.last_section,,)
   /* Fill last section with a word to ensure location counter and actual rom
    * region data usage match. */
   LONG(CONFIG_LINKER_LAST_SECTION_ID_PATTERN)
-  /* __rom_region_size is used when configuring the PMP entry of the ROM region.
-   * Addresses (pmpaddr) in PMP registers need to be aligned to 4. Align
+  /* __rom_region_size is used when configuring the SPMP entry of the ROM region.
+   * Addresses (spmpaddr) in SPMP registers need to be aligned to 4. Align
    * __rom_region_size to 4 to meet that requirement. */
   MPU_MIN_SIZE_ALIGN
 #endif

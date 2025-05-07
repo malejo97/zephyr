@@ -59,19 +59,19 @@ boot_first_core:
 	la t0, boot_hart_id
 	sw a0, 0(t0)
 
-# #ifdef CONFIG_FPU
-# 	/*
-# 	 * Enable floating-point.
-# 	 */
-# 	li t0, MSTATUS_FS_INIT
-# 	csrs mstatus, t0
+#ifdef CONFIG_FPU
+	/*
+	 * Enable floating-point.
+	 */
+	li t0, SSTATUS_FS_INIT
+	csrs sstatus, t0
 
-# 	/*
-# 	 * Floating-point rounding mode set to IEEE-754 default, and clear
-# 	 * all exception flags.
-# 	 */
-# 	fscsr zero
-# #endif
+	/*
+	 * Floating-point rounding mode set to IEEE-754 default, and clear
+	 * all exception flags.
+	 */
+	fscsr zero
+#endif
 
 #ifdef CONFIG_INIT_STACKS
 	/* Pre-populate all bytes in z_interrupt_stacks with 0xAA */

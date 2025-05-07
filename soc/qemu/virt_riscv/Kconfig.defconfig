@@ -25,7 +25,7 @@ config MAX_IRQ_PER_AGGREGATOR
 config NUM_IRQS
 	default 1036
 
-config PMP_SLOTS
+config SPMP_SLOTS
 	default 16
 
 endif # SOC_FAMILY_QEMU_VIRT_RISCV

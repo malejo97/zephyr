@@ -63,7 +63,7 @@ struct z_riscv_fp_context {
 };
 typedef struct z_riscv_fp_context z_riscv_fp_context_t;
 
-#define PMP_M_MODE_SLOTS 8	/* 8 is plenty enough for m-mode */
+#define SPMP_S_MODE_SLOTS 8
 
 struct _thread_arch {
 #ifdef CONFIG_FPU_SHARING
@@ -73,16 +73,16 @@ struct _thread_arch {
 #endif
 #ifdef CONFIG_USERSPACE
 	unsigned long priv_stack_start;
-	unsigned long u_mode_pmpaddr_regs[CONFIG_PMP_SLOTS];
-	unsigned long u_mode_pmpcfg_regs[CONFIG_PMP_SLOTS / sizeof(unsigned long)];
-	unsigned int u_mode_pmp_domain_offset;
-	unsigned int u_mode_pmp_end_index;
-	unsigned int u_mode_pmp_update_nr;
+	unsigned long u_mode_spmpaddr_regs[CONFIG_SPMP_SLOTS];
+	unsigned long u_mode_spmpcfg_regs[CONFIG_SPMP_SLOTS / sizeof(unsigned long)];
+	unsigned int u_mode_spmp_domain_offset;
+	unsigned int u_mode_spmp_end_index;
+	unsigned int u_mode_spmp_update_nr;
 #endif
-#ifdef CONFIG_PMP_STACK_GUARD
-	unsigned int m_mode_pmp_end_index;
-	unsigned long m_mode_pmpaddr_regs[PMP_M_MODE_SLOTS];
-	unsigned long m_mode_pmpcfg_regs[PMP_M_MODE_SLOTS / sizeof(unsigned long)];
+#ifdef CONFIG_SPMP_STACK_GUARD
+	unsigned int m_mode_spmp_end_index;
+	unsigned long m_mode_spmpaddr_regs[SPMP_M_MODE_SLOTS];
+	unsigned long m_mode_spmpcfg_regs[SPMP_M_MODE_SLOTS / sizeof(unsigned long)];
 #endif
 };
 

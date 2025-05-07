@@ -33,10 +33,10 @@
 /* stacks, for RISCV architecture stack should be 16byte-aligned */
 #define ARCH_STACK_PTR_ALIGN  16
 
-#define Z_RISCV_STACK_PMP_ALIGN \
-	MAX(CONFIG_PMP_GRANULARITY, ARCH_STACK_PTR_ALIGN)
+#define Z_RISCV_STACK_SPMP_ALIGN \
+		MAX(CONFIG_SPMP_GRANULARITY, ARCH_STACK_PTR_ALIGN)
 
-#ifdef CONFIG_PMP_STACK_GUARD
+#ifdef CONFIG_SPMP_STACK_GUARD
 /*
  * The StackGuard is an area at the bottom of the kernel-mode stack made to
  * fault when accessed. It is _not_ faulting when in exception mode as we rely
@@ -46,16 +46,16 @@
  * as well as some guard size to cover possible sudden stack pointer
  * displacement before the fault.
  */
-#ifdef CONFIG_PMP_POWER_OF_TWO_ALIGNMENT
+#ifdef CONFIG_SPMP_POWER_OF_TWO_ALIGNMENT
 #define Z_RISCV_STACK_GUARD_SIZE \
-	Z_POW2_CEIL(MAX(sizeof(struct arch_esf) + CONFIG_PMP_STACK_GUARD_MIN_SIZE, \
-			Z_RISCV_STACK_PMP_ALIGN))
+	Z_POW2_CEIL(MAX(sizeof(struct arch_esf) + CONFIG_SPMP_STACK_GUARD_MIN_SIZE, \
+			Z_RISCV_STACK_SPMP_ALIGN))
 #define ARCH_KERNEL_STACK_OBJ_ALIGN	Z_RISCV_STACK_GUARD_SIZE
 #else
 #define Z_RISCV_STACK_GUARD_SIZE \
-	ROUND_UP(sizeof(struct arch_esf) + CONFIG_PMP_STACK_GUARD_MIN_SIZE, \
-		 Z_RISCV_STACK_PMP_ALIGN)
-#define ARCH_KERNEL_STACK_OBJ_ALIGN	Z_RISCV_STACK_PMP_ALIGN
+	ROUND_UP(sizeof(struct arch_esf) + CONFIG_SPMP_STACK_GUARD_MIN_SIZE, \
+		 Z_RISCV_STACK_SPMP_ALIGN)
+#define ARCH_KERNEL_STACK_OBJ_ALIGN	Z_RISCV_STACK_SPMP_ALIGN
 #endif
 
 /* Kernel-only stacks have the following layout if a stack guard is enabled:
@@ -72,11 +72,11 @@
  */
 #define ARCH_KERNEL_STACK_RESERVED	Z_RISCV_STACK_GUARD_SIZE
 
-#else /* !CONFIG_PMP_STACK_GUARD */
+#else /* !CONFIG_SPMP_STACK_GUARD */
 #define Z_RISCV_STACK_GUARD_SIZE 0
 #endif
 
-#ifdef CONFIG_PMP_POWER_OF_TWO_ALIGNMENT
+#ifdef CONFIG_SPMP_POWER_OF_TWO_ALIGNMENT
 /* The privilege elevation stack is located in another area of memory
  * generated at build time by gen_kobject_list.py
  *
@@ -103,7 +103,7 @@
  *
  * When transitioning to user space, the guard area will be removed from
  * the main stack. Any thread running in user mode will have full access
- * to the region denoted by thread.stack_info. Make it PMP-NAPOT compatible.
+ * to the region denoted by thread.stack_info. Make it SPMP-NAPOT compatible.
  *
  * +------------+ <- thread.stack_obj = thread.stack_info.start
  * | Thread     |
@@ -116,13 +116,13 @@
 #define ARCH_THREAD_STACK_RESERVED Z_RISCV_STACK_GUARD_SIZE
 #define ARCH_THREAD_STACK_SIZE_ADJUST(size) \
 	Z_POW2_CEIL(MAX(MAX(size, CONFIG_PRIVILEGED_STACK_SIZE), \
-			Z_RISCV_STACK_PMP_ALIGN))
+			Z_RISCV_STACK_SPMP_ALIGN))
 #define ARCH_THREAD_STACK_OBJ_ALIGN(size) \
 		ARCH_THREAD_STACK_SIZE_ADJUST(size)
 
-#else /* !CONFIG_PMP_POWER_OF_TWO_ALIGNMENT */
+#else /* !CONFIG_SPMP_POWER_OF_TWO_ALIGNMENT */
 
-/* The stack object will contain the PMP guard, the privilege stack, and then
+/* The stack object will contain the SPMP guard, the privilege stack, and then
  * the usermode stack buffer in that order:
  *
  * +------------+ <- thread.stack_obj
@@ -139,11 +139,11 @@
  */
 #define ARCH_THREAD_STACK_RESERVED \
 	ROUND_UP(Z_RISCV_STACK_GUARD_SIZE + CONFIG_PRIVILEGED_STACK_SIZE, \
-		 Z_RISCV_STACK_PMP_ALIGN)
+		 Z_RISCV_STACK_SPMP_ALIGN)
 #define ARCH_THREAD_STACK_SIZE_ADJUST(size) \
-	ROUND_UP(size, Z_RISCV_STACK_PMP_ALIGN)
-#define ARCH_THREAD_STACK_OBJ_ALIGN(size)	Z_RISCV_STACK_PMP_ALIGN
-#endif /* CONFIG_PMP_POWER_OF_TWO_ALIGNMENT */
+	ROUND_UP(size, Z_RISCV_STACK_SPMP_ALIGN)
+#define ARCH_THREAD_STACK_OBJ_ALIGN(size)	Z_RISCV_STACK_SPMP_ALIGN
+#endif /* CONFIG_SPMP_POWER_OF_TWO_ALIGNMENT */
 
 #ifdef CONFIG_64BIT
 #define RV_REGSIZE 8
@@ -171,6 +171,8 @@
 #define SSTATUS_SPP_S 	 (1UL << 8)
 #define SSTATUS_SPP_U	 (0UL << 8)
 #define SSTATUS_FS_INIT  (1UL << 13)
+#define SSTATUS_FS_CLEAN (2UL << 13)
+#define SSTATUS_FS_DIRTY (3UL << 13)
 
 /* This comes from openisa_rv32m1, but doesn't seem to hurt on other
  * platforms:
@@ -200,18 +202,18 @@ extern "C" {
  * The macros are to be stored in k_mem_partition_attr_t
  * objects. The format of a k_mem_partition_attr_t object
  * is an uint8_t composed by configuration register flags
- * located in arch/riscv/include/core_pmp.h
+ * located in arch/riscv/include/core_spmp.h
  */
 
 /* Read-Write access permission attributes */
 #define K_MEM_PARTITION_P_RW_U_RW ((k_mem_partition_attr_t) \
-	{PMP_R | PMP_W})
+	{SPMP_R | SPMP_W})
 #define K_MEM_PARTITION_P_RW_U_RO ((k_mem_partition_attr_t) \
-	{PMP_R})
+	{SPMP_R})
 #define K_MEM_PARTITION_P_RW_U_NA ((k_mem_partition_attr_t) \
 	{0})
 #define K_MEM_PARTITION_P_RO_U_RO ((k_mem_partition_attr_t) \
-	{PMP_R})
+	{SPMP_R})
 #define K_MEM_PARTITION_P_RO_U_NA ((k_mem_partition_attr_t) \
 	{0})
 #define K_MEM_PARTITION_P_NA_U_NA ((k_mem_partition_attr_t) \
@@ -219,17 +221,17 @@ extern "C" {
 
 /* Execution-allowed attributes */
 #define K_MEM_PARTITION_P_RWX_U_RWX ((k_mem_partition_attr_t) \
-	{PMP_R | PMP_W | PMP_X})
+	{SPMP_R | SPMP_W | SPMP_X})
 #define K_MEM_PARTITION_P_RX_U_RX ((k_mem_partition_attr_t) \
-	{PMP_R | PMP_X})
+	{SPMP_R | SPMP_X})
 
 /* Typedef for the k_mem_partition attribute */
 typedef struct {
-	uint8_t pmp_attr;
+	uint8_t spmp_attr;
 } k_mem_partition_attr_t;
 
 struct arch_mem_domain {
-	unsigned int pmp_update_nr;
+	unsigned int spmp_update_nr;
 };
 
 extern void z_irq_spurious(const void *unused);
@@ -275,7 +277,7 @@ static ALWAYS_INLINE bool arch_irq_unlocked(unsigned int key)
 #ifdef CONFIG_RISCV_SOC_HAS_CUSTOM_IRQ_LOCK_OPS
 	return z_soc_irq_unlocked(key);
 #else
-	return (key & MSTATUS_IEN) != 0;
+	return (key & SSTATUS_IEN) != 0;
 #endif
 }
 

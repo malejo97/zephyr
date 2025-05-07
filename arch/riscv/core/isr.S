@@ -364,7 +364,8 @@ no_fp:	/* increment _current->arch.exception_depth */
 	li t1, RISCV_EXC_ECALLU
 	beq t0, t1, is_user_syscall
 
-#if defined(CONFIG_PMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
+/* TODO: Change to SPMP? Delete? */
+#if defined(CONFIG_SPMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
 	/*
 	 * Determine if we come from user space. If so, reconfigure the PMP for
 	 * kernel mode stack guard.
@@ -374,9 +375,9 @@ no_fp:	/* increment _current->arch.exception_depth */
 	and t0, t0, t1
 	bnez t0, 1f
 	lr a0, ___cpu_t_current_OFFSET(s0)
-	call z_riscv_pmp_stackguard_enable
+	call z_riscv_spmp_stackguard_enable
 1:
-#endif /* CONFIG_PMP_STACK_GUARD */
+#endif /* CONFIG_SPMP_STACK_GUARD */
 
 #endif /* CONFIG_USERSPACE */
 
@@ -404,14 +405,6 @@ is_kernel_syscall:
 	lr t0, __struct_arch_esf_mepc_OFFSET(sp)
 	addi t0, t0, 4
 	sr t0, __struct_arch_esf_mepc_OFFSET(sp)
-
-#if defined(CONFIG_PMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
-	/* Re-activate PMP for m-mode */
-	li t1, MSTATUS_MPP
-	csrc mstatus, t1
-	li t1, MSTATUS_MPRV
-	csrs mstatus, t1
-#endif
 
 	/* Determine what to do. Operation code is in t0. */
 	lr t0, __struct_arch_esf_t0_OFFSET(sp)
@@ -516,15 +509,13 @@ do_irq_offload:
 #ifdef CONFIG_USERSPACE
 is_user_syscall:
 
-#if defined(CONFIG_PMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
+#if defined(CONFIG_SPMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
 	/*
 	 * We came from userspace and need to reconfigure the
-	 * PMP for kernel mode stack guard.
+	 * SPMP for kernel mode stack guard.
 	 */
-	/*
-		lr a0, ___cpu_t_current_OFFSET(s0)
-		call z_riscv_pmp_stackguard_enable
-	*/
+	lr a0, ___cpu_t_current_OFFSET(s0)
+	call z_riscv_spmp_stackguard_enable
 #endif
 
 	/* It is safe to re-enable IRQs now */
@@ -588,25 +579,21 @@ valid_syscall_id:
 
 is_interrupt:
 
-#if defined(CONFIG_PMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
+#if defined(CONFIG_SPMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
 #ifdef CONFIG_USERSPACE
 	/*
 	 * If we came from userspace then we need to reconfigure the
-	 * PMP for kernel mode stack guard.
+	 * SPMP for kernel mode stack guard.
 	 */
 	lr t0, __struct_arch_esf_mstatus_OFFSET(sp)
 	li t1, MSTATUS_MPP
 	and t0, t0, t1
 	bnez t0, 1f
 	lr a0, ___cpu_t_current_OFFSET(s0)
-	call z_riscv_pmp_stackguard_enable
+	call z_riscv_spmp_stackguard_enable
 	j 2f
 #endif /* CONFIG_USERSPACE */
-1:	/* Re-activate PMP for m-mode */
-	li t1, MSTATUS_MPP
-	csrc mstatus, t1
-	li t1, MSTATUS_MPRV
-	csrs mstatus, t1
+1:	/* Re-activate SPMP for S-mode */
 2:
 #endif
 
@@ -765,12 +752,10 @@ fp_trap_exit:
 	and t0, t2, t1
 	bnez t0, 1f
 
-#if defined(CONFIG_PMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
-	/* Remove kernel stack guard and Reconfigure PMP for user mode */
-	/*
-		lr a0, ___cpu_t_current_OFFSET(s0)
-		call z_riscv_pmp_usermode_enable
-	*/
+#if defined(CONFIG_SPMP_STACK_GUARD) && defined(CONFIG_MULTITHREADING)
+	/* Remove kernel stack guard and Reconfigure SPMP for user mode */
+	lr a0, ___cpu_t_current_OFFSET(s0)
+	call z_riscv_spmp_usermode_enable
 #endif
 
 	/* Set our per-thread usermode flag */

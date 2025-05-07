@@ -149,7 +149,7 @@ FUNC_NORETURN void z_riscv_fatal_error_csf(unsigned int reason, const struct arc
 
 static bool bad_stack_pointer(struct arch_esf *esf)
 {
-#ifdef CONFIG_PMP_STACK_GUARD
+#ifdef CONFIG_SPMP_STACK_GUARD
 	/*
 	 * Check if the kernel stack pointer prior this exception (before
 	 * storing the exception stack frame) was in the stack guard area.
@@ -186,7 +186,7 @@ static bool bad_stack_pointer(struct arch_esf *esf)
 		return true;
 	}
 #endif /* CONFIG_MULTITHREADING */
-#endif /* CONFIG_PMP_STACK_GUARD */
+#endif /* CONFIG_SPMP_STACK_GUARD */
 
 #ifdef CONFIG_USERSPACE
 	if ((esf->mstatus & MSTATUS_MPP) == 0 &&
@@ -206,7 +206,7 @@ void z_riscv_fault(struct arch_esf *esf)
 {
 #ifdef CONFIG_USERSPACE
 	/*
-	 * Perform an assessment whether an PMP fault shall be
+	 * Perform an assessment whether an SPMP fault shall be
 	 * treated as recoverable.
 	 */
 	for (int i = 0; i < ARRAY_SIZE(exceptions); i++) {

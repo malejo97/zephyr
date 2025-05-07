@@ -69,8 +69,8 @@ void arch_secondary_cpu_init(int hartid)
 #if defined(CONFIG_RISCV_SOC_INTERRUPT_INIT)
 	soc_interrupt_init();
 #endif
-#ifdef CONFIG_RISCV_PMP
-	z_riscv_pmp_init();
+#ifdef CONFIG_RISCV_SPMP
+	z_riscv_spmp_init();
 #endif
 #ifdef CONFIG_SMP
 	irq_enable(RISCV_IRQ_MSOFT);
