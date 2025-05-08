@@ -18,6 +18,39 @@
 Z_THREAD_LOCAL uint8_t is_user_mode;
 #endif
 
+static void print_spmp(void)
+{
+	unsigned long spmpcfg[16];
+	unsigned long spmpaddr[64];
+	unsigned long spmpswitch;
+
+	__asm__ volatile("csrr %0, 0x500" : "=r" (spmpcfg[0]));
+
+	__asm__ volatile("csrr %0, 0x510" : "=r" (spmpaddr[0]));
+	__asm__ volatile("csrr %0, 0x511" : "=r" (spmpaddr[1]));
+	__asm__ volatile("csrr %0, 0x512" : "=r" (spmpaddr[2]));
+	__asm__ volatile("csrr %0, 0x513" : "=r" (spmpaddr[3]));
+	__asm__ volatile("csrr %0, 0x514" : "=r" (spmpaddr[4]));
+	__asm__ volatile("csrr %0, 0x515" : "=r" (spmpaddr[5]));
+	__asm__ volatile("csrr %0, 0x516" : "=r" (spmpaddr[6]));
+	__asm__ volatile("csrr %0, 0x517" : "=r" (spmpaddr[7]));
+
+	__asm__ volatile("csrr %0, 0x550" : "=r" (spmpswitch));
+
+	printf("\nspmpcfg0:  %lx\n", spmpcfg[0]);
+
+	printf("\nspmpaddr0:  %lx\n", (spmpaddr[0] << 2));
+	printf("spmpaddr1:  %lx\n", (spmpaddr[1] << 2));
+	printf("spmpaddr2:  %lx\n", (spmpaddr[2] << 2));
+	printf("spmpaddr3:  %lx\n", (spmpaddr[3] << 2));
+	printf("spmpaddr4:  %lx\n", (spmpaddr[4] << 2));
+	printf("spmpaddr5:  %lx\n", (spmpaddr[5] << 2));
+	printf("spmpaddr6:  %lx\n", (spmpaddr[6] << 2));
+	printf("spmpaddr7:  %lx\n", (spmpaddr[7] << 2));
+
+	printf("\nspmpswitch: %lx\n", spmpswitch);
+}
+
 void arch_new_thread(struct k_thread *thread, k_thread_stack_t *stack,
 		     char *stack_ptr, k_thread_entry_t entry,
 		     void *p1, void *p2, void *p3)
