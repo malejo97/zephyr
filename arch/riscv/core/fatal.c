@@ -28,6 +28,57 @@ static const struct z_exc_handle exceptions[] = {
  #define NO_REG "                "
 #endif
 
+static void print_spmp(void)
+{
+	unsigned long spmpcfg[16];
+	unsigned long spmpaddr[64];
+	unsigned long spmpswitch;
+	
+	__asm__ volatile("csrr %0, 0x500" : "=r" (spmpcfg[0]));
+	__asm__ volatile("csrr %0, 0x502" : "=r" (spmpcfg[2]));
+
+	__asm__ volatile("csrr %0, 0x510" : "=r" (spmpaddr[0]));
+	__asm__ volatile("csrr %0, 0x511" : "=r" (spmpaddr[1]));
+	__asm__ volatile("csrr %0, 0x512" : "=r" (spmpaddr[2]));
+	__asm__ volatile("csrr %0, 0x513" : "=r" (spmpaddr[3]));
+	__asm__ volatile("csrr %0, 0x514" : "=r" (spmpaddr[4]));
+	__asm__ volatile("csrr %0, 0x515" : "=r" (spmpaddr[5]));
+	__asm__ volatile("csrr %0, 0x516" : "=r" (spmpaddr[6]));
+	__asm__ volatile("csrr %0, 0x517" : "=r" (spmpaddr[7]));
+	__asm__ volatile("csrr %0, 0x518" : "=r" (spmpaddr[8]));
+	__asm__ volatile("csrr %0, 0x519" : "=r" (spmpaddr[9]));
+	__asm__ volatile("csrr %0, 0x51A" : "=r" (spmpaddr[10]));
+	__asm__ volatile("csrr %0, 0x51B" : "=r" (spmpaddr[11]));
+	__asm__ volatile("csrr %0, 0x51C" : "=r" (spmpaddr[12]));
+	__asm__ volatile("csrr %0, 0x51D" : "=r" (spmpaddr[13]));
+	__asm__ volatile("csrr %0, 0x51E" : "=r" (spmpaddr[14]));
+	__asm__ volatile("csrr %0, 0x51F" : "=r" (spmpaddr[15]));
+
+	__asm__ volatile("csrr %0, 0x550" : "=r" (spmpswitch));
+
+	LOG_ERR("  spmpcfg0:  %lx", spmpcfg[0]);
+	LOG_ERR("  spmpcfg2:  %lx", spmpcfg[2]);
+
+	LOG_ERR("  spmpaddr0:  %lx", (spmpaddr[0] << 2));
+	LOG_ERR("  spmpaddr1:  %lx", (spmpaddr[1] << 2));
+	LOG_ERR("  spmpaddr2:  %lx", (spmpaddr[2] << 2));
+	LOG_ERR("  spmpaddr3:  %lx", (spmpaddr[3] << 2));
+	LOG_ERR("  spmpaddr4:  %lx", (spmpaddr[4] << 2));
+	LOG_ERR("  spmpaddr5:  %lx", (spmpaddr[5] << 2));
+	LOG_ERR("  spmpaddr6:  %lx", (spmpaddr[6] << 2));
+	LOG_ERR("  spmpaddr7:  %lx", (spmpaddr[7] << 2));
+	LOG_ERR("  spmpaddr8:  %lx", (spmpaddr[8] << 2));
+	LOG_ERR("  spmpaddr9:  %lx", (spmpaddr[9] << 2));
+	LOG_ERR("  spmpaddr10: %lx", (spmpaddr[10] << 2));
+	LOG_ERR("  spmpaddr11: %lx", (spmpaddr[11] << 2));
+	LOG_ERR("  spmpaddr12: %lx", (spmpaddr[12] << 2));
+	LOG_ERR("  spmpaddr13: %lx", (spmpaddr[13] << 2));
+	LOG_ERR("  spmpaddr14: %lx", (spmpaddr[14] << 2));
+	LOG_ERR("  spmpaddr15: %lx", (spmpaddr[15] << 2));
+
+	LOG_ERR("  spmpswitch: %lx", spmpswitch);
+}
+
 /* Stack trace function */
 void z_riscv_unwind_stack(const struct arch_esf *esf, const _callee_saved_t *csf);
 
@@ -122,6 +173,8 @@ FUNC_NORETURN void z_riscv_fatal_error_csf(unsigned int reason, const struct arc
 		LOG_ERR("mstatus: " PR_REG, esf->mstatus);
 		LOG_ERR("");
 	}
+
+	print_spmp();
 
 	if (csf != NULL) {
 #if defined(CONFIG_RISCV_ISA_RV32E)

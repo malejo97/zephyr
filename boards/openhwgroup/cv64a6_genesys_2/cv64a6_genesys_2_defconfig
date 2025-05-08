@@ -1,5 +1,7 @@
 # Copyright 2024 CISPA Helmholtz Center for Information Security gGmbH
 # SPDX-License-Identifier: Apache-2.0
+CONFIG_PRIVILEGED_STACK_SIZE=2048
+CONFIG_STACK_SENTINEL=y
 CONFIG_INCLUDE_RESET_VECTOR=y
 CONFIG_CONSOLE=y
 CONFIG_SERIAL=y
