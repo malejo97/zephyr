@@ -113,6 +113,8 @@ struct sbiret sbi_ecall(int ext, int fid, unsigned long arg0,
                         unsigned long arg3, unsigned long arg4,
                         unsigned long arg5);
 int sbi_set_timer(uint64_t time);
+int sbi_hsm_hart_start(unsigned long long hartid, unsigned long long saddr);
+int sbi_send_ipi(unsigned long long hart_mask, unsigned long long hart_mask_base);
 int sbi_irq_offload(uint64_t routine, uint64_t parameter, unsigned long id);
 int sbi_runtime_except(uint64_t reason, unsigned long id);
 int sbi_schedule(uint64_t new_one, uint64_t old, unsigned long id);

@@ -8,6 +8,7 @@
 #include <ksched.h>
 
 #include <zephyr/kernel.h>
+#include <zephyr/arch/riscv/sbi.h>
 
 #define CLINT_NODE DT_NODELABEL(clint)
 #if !DT_NODE_EXISTS(CLINT_NODE)
@@ -29,7 +30,10 @@ void arch_sched_directed_ipi(uint32_t cpu_bitmap)
 	for (unsigned int i = 0; i < num_cpus; i++) {
 		if ((i != id) && _kernel.cpus[i].arch.online && ((cpu_bitmap & BIT(i)) != 0)) {
 			atomic_set_bit(&cpu_pending_ipi[i], IPI_SCHED);
-			MSIP(_kernel.cpus[i].arch.hartid) = 1;
+			uint64_t cpumask = 0;
+			atomic_set_bit((atomic_t *)&cpumask,_kernel.cpus[i].arch.hartid);
+			// hart-mask_base starts from 0
+			sbi_send_ipi(cpumask,0);
 		}
 	}
 
@@ -40,7 +44,8 @@ void arch_sched_directed_ipi(uint32_t cpu_bitmap)
 void arch_flush_fpu_ipi(unsigned int cpu)
 {
 	atomic_set_bit(&cpu_pending_ipi[cpu], IPI_FPU_FLUSH);
-	MSIP(_kernel.cpus[cpu].arch.hartid) = 1;
+	// opensbi has already covered this.
+	// MSIP(_kernel.cpus[cpu].arch.hartid) = 1;
 }
 #endif /* CONFIG_FPU_SHARING */
 
@@ -48,7 +53,8 @@ static void sched_ipi_handler(const void *unused)
 {
 	ARG_UNUSED(unused);
 
-	MSIP(csr_read(mhartid)) = 0;
+	// opensbi has already covered this.
+	// MSIP(csr_read(mhartid)) = 0;
 
 	atomic_val_t pending_ipi = atomic_clear(&cpu_pending_ipi[_current_cpu->id]);
 
@@ -58,7 +64,7 @@ static void sched_ipi_handler(const void *unused)
 #ifdef CONFIG_FPU_SHARING
 	if (pending_ipi & ATOMIC_MASK(IPI_FPU_FLUSH)) {
 		/* disable IRQs */
-		csr_clear(mstatus, MSTATUS_IEN);
+		csr_clear(sstatus, SSTATUS_IEN);
 		/* perform the flush */
 		arch_flush_local_fpu();
 		/*
@@ -94,8 +100,8 @@ void arch_spin_relax(void)
 int arch_smp_init(void)
 {
 
-	IRQ_CONNECT(RISCV_IRQ_MSOFT, 0, sched_ipi_handler, NULL, 0);
-	irq_enable(RISCV_IRQ_MSOFT);
+	IRQ_CONNECT(RISCV_IRQ_SSOFT, 0, sched_ipi_handler, NULL, 0);
+	irq_enable(RISCV_IRQ_SSOFT);
 
 	return 0;
 }

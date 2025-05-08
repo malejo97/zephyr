@@ -12,6 +12,7 @@
 #include <zephyr/arch/riscv/irq.h>
 #include <zephyr/drivers/pm_cpu_ops.h>
 #include <zephyr/platform/hooks.h>
+#include <zephyr/arch/riscv/sbi.h>
 
 volatile struct {
 	arch_cpustart_t fn;
@@ -36,6 +37,7 @@ void arch_cpu_start(int cpu_num, k_thread_stack_t *stack, int sz,
 
 	riscv_cpu_sp = K_KERNEL_STACK_BUFFER(stack) + sz;
 	riscv_cpu_boot_flag = 0U;
+	sbi_hsm_hart_start(_kernel.cpus[cpu_num].arch.hartid,(unsigned long)__start);
 
 #ifdef CONFIG_PM_CPU_OPS
 	if (pm_cpu_on(cpu_num, (uintptr_t)&__start)) {
@@ -59,7 +61,7 @@ void arch_secondary_cpu_init(int hartid)
 			cpu_num = i;
 		}
 	}
-	csr_write(mscratch, &_kernel.cpus[cpu_num]);
+	csr_write(sscratch, &_kernel.cpus[cpu_num]);
 #ifdef CONFIG_SMP
 	_kernel.cpus[cpu_num].arch.online = true;
 #endif
@@ -73,7 +75,7 @@ void arch_secondary_cpu_init(int hartid)
 	z_riscv_spmp_init();
 #endif
 #ifdef CONFIG_SMP
-	irq_enable(RISCV_IRQ_MSOFT);
+	irq_enable(RISCV_IRQ_SSOFT);
 #endif /* CONFIG_SMP */
 #ifdef CONFIG_PLIC_IRQ_AFFINITY
 	/* Enable on secondary cores so that they can respond to PLIC */

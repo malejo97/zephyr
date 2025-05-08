@@ -60,6 +60,30 @@ int sbi_set_timer(uint64_t time) {
         return 0;
 }
 
+int sbi_hsm_hart_start(unsigned long long hartid, unsigned long long saddr)
+{
+	struct sbiret ret;
+
+	ret = sbi_ecall(SBI_EXT_HSM, SBI_EXT_HSM_HART_START,
+			hartid, saddr, 0, 0, 0, 0);
+	if (ret.error)
+		return ret.error;
+	else
+		return 0;
+}
+
+int sbi_send_ipi(unsigned long long hart_mask, unsigned long long hart_mask_base)
+{
+	struct sbiret ret;
+
+	ret = sbi_ecall(SBI_EXT_IPI, SBI_EXT_IPI_SEND_IPI, hart_mask,
+						hart_mask_base, 0, 0, 0, 0);
+	if (ret.error)
+		return ret.error;
+	else
+		return 0;
+}
+
 int sbi_irq_offload(uint64_t routine,uint64_t parameter, unsigned long id){
 	struct sbiret ret;
 

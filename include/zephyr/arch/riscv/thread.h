@@ -80,9 +80,9 @@ struct _thread_arch {
 	unsigned int u_mode_spmp_update_nr;
 #endif
 #ifdef CONFIG_SPMP_STACK_GUARD
-	unsigned int m_mode_spmp_end_index;
-	unsigned long m_mode_spmpaddr_regs[SPMP_M_MODE_SLOTS];
-	unsigned long m_mode_spmpcfg_regs[SPMP_M_MODE_SLOTS / sizeof(unsigned long)];
+	unsigned int s_mode_spmp_end_index;
+	unsigned long s_mode_spmpaddr_regs[SPMP_M_MODE_SLOTS];
+	unsigned long s_mode_spmpcfg_regs[SPMP_M_MODE_SLOTS / sizeof(unsigned long)];
 #endif
 };
 
