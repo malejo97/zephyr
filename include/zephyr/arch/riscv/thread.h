@@ -75,6 +75,11 @@ struct _thread_arch {
 	unsigned long priv_stack_start;
 	unsigned long u_mode_spmpaddr_regs[CONFIG_SPMP_SLOTS];
 	unsigned long u_mode_spmpcfg_regs[CONFIG_SPMP_SLOTS / sizeof(unsigned long)];
+#ifdef CONFIG_64BIT
+	unsigned long u_mode_spmpswitch_reg[1];
+#else
+	unsigned long u_mode_spmpswitch_reg[2];
+#endif
 	unsigned int u_mode_spmp_domain_offset;
 	unsigned int u_mode_spmp_end_index;
 	unsigned int u_mode_spmp_update_nr;

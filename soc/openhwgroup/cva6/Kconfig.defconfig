@@ -27,7 +27,7 @@ config NUM_IRQS
 	default 42
 
 config SPMP_SLOTS
-	default 16
+	default 64
 
 config MULTI_LEVEL_INTERRUPTS
 	default y
