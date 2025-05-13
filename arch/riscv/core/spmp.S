@@ -9,8 +9,9 @@
 #include <zephyr/arch/cpu.h>
 #include "asm_macros.inc"
 
-#define CSR_SPMPCFG_BASE  0x500
-#define CSR_SPMPADDR_BASE 0x510
+#define CSR_SPMPCFG_BASE    0x500
+#define CSR_SPMPADDR_BASE   0x510
+#define CSR_SPMPSWITCH_BASE 0x550
 
 /*
  * Prototype:
@@ -19,7 +20,8 @@
  *                                unsigned int end,		// a1
  *                                bool clear_trailing_entries,	// a2
  *                                unsigned long *spmp_addr,		// a3
- *                                unsigned long *spmp_cfg)		// a4
+ *                                unsigned long *spmp_cfg,		// a4
+ *                                unsigned long *spmp_switch)	// a5
  *
  * Called from spmp.c to write a range of SPMP entries.
  *
@@ -86,7 +88,7 @@ spmpcfg_store:
 
 spmpcfg_done:
 
-	beqz a2, done
+	beqz a2, spmpswitch_store
 
 	la t0, spmpcfg_zerotail
 	slli a0, a0, 2  /* 4-byte instruction blocks */
@@ -102,6 +104,22 @@ spmpcfg_zerotail:
 	csrw (CSR_SPMPCFG_BASE + RV_REGSIZE/4 * _index), zero
 	.set _index, _index + 1
 	.endr
+	.option pop
+
+spmpswitch_store:
+
+	.option push
+	.option norvc
+	lr t0, 0(a5)
+	csrr t1, CSR_SPMPSWITCH_BASE
+	or t0, t0, t1
+	csrw CSR_SPMPSWITCH_BASE, t0
+#ifndef CONFIG_64BIT
+	lr t0, 4(a5)
+	csrr t1, (CSR_SPMPSWITCH_BASE + 1)
+	or t0, t0, t1
+	csrw (CSR_SPMPSWITCH_BASE + 1), t0
+#endif
 	.option pop
 
 done:	ret

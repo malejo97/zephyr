@@ -34,6 +34,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/linker/linker-defs.h>
 #include <zephyr/arch/arch_interface.h>
+#include <zephyr/arch/riscv/arch.h>
 
 #define LOG_LEVEL CONFIG_MPU_LOG_LEVEL
 #include <zephyr/logging/log.h>
@@ -58,6 +59,56 @@ LOG_MODULE_REGISTER(mpu);
 
 #define SPMP_NONE 0
 
+static void print_spmp(void)
+{
+	unsigned long spmpcfg[16];
+	unsigned long spmpaddr[64];
+	unsigned long spmpswitch;
+	
+	__asm__ volatile("csrr %0, 0x500" : "=r" (spmpcfg[0]));
+	__asm__ volatile("csrr %0, 0x502" : "=r" (spmpcfg[2]));
+
+	__asm__ volatile("csrr %0, 0x510" : "=r" (spmpaddr[0]));
+	__asm__ volatile("csrr %0, 0x511" : "=r" (spmpaddr[1]));
+	__asm__ volatile("csrr %0, 0x512" : "=r" (spmpaddr[2]));
+	__asm__ volatile("csrr %0, 0x513" : "=r" (spmpaddr[3]));
+	__asm__ volatile("csrr %0, 0x514" : "=r" (spmpaddr[4]));
+	__asm__ volatile("csrr %0, 0x515" : "=r" (spmpaddr[5]));
+	__asm__ volatile("csrr %0, 0x516" : "=r" (spmpaddr[6]));
+	__asm__ volatile("csrr %0, 0x517" : "=r" (spmpaddr[7]));
+	__asm__ volatile("csrr %0, 0x518" : "=r" (spmpaddr[8]));
+	__asm__ volatile("csrr %0, 0x519" : "=r" (spmpaddr[9]));
+	__asm__ volatile("csrr %0, 0x51A" : "=r" (spmpaddr[10]));
+	__asm__ volatile("csrr %0, 0x51B" : "=r" (spmpaddr[11]));
+	__asm__ volatile("csrr %0, 0x51C" : "=r" (spmpaddr[12]));
+	__asm__ volatile("csrr %0, 0x51D" : "=r" (spmpaddr[13]));
+	__asm__ volatile("csrr %0, 0x51E" : "=r" (spmpaddr[14]));
+	__asm__ volatile("csrr %0, 0x51F" : "=r" (spmpaddr[15]));
+
+	__asm__ volatile("csrr %0, 0x550" : "=r" (spmpswitch));
+
+	LOG_WRN("  spmpcfg0:  %lx\n", spmpcfg[0]);
+	LOG_WRN("  spmpcfg2:  %lx\n", spmpcfg[2]);
+
+	LOG_WRN("  spmpaddr0:  %lx\n", (spmpaddr[0] << 2));
+	LOG_WRN("  spmpaddr1:  %lx\n", (spmpaddr[1] << 2));
+	LOG_WRN("  spmpaddr2:  %lx\n", (spmpaddr[2] << 2));
+	LOG_WRN("  spmpaddr3:  %lx\n", (spmpaddr[3] << 2));
+	LOG_WRN("  spmpaddr4:  %lx\n", (spmpaddr[4] << 2));
+	LOG_WRN("  spmpaddr5:  %lx\n", (spmpaddr[5] << 2));
+	LOG_WRN("  spmpaddr6:  %lx\n", (spmpaddr[6] << 2));
+	LOG_WRN("  spmpaddr7:  %lx\n", (spmpaddr[7] << 2));
+	LOG_WRN("  spmpaddr8:  %lx\n", (spmpaddr[8] << 2));
+	LOG_WRN("  spmpaddr9:  %lx\n", (spmpaddr[9] << 2));
+	LOG_WRN("  spmpaddr10: %lx\n", (spmpaddr[10] << 2));
+	LOG_WRN("  spmpaddr11: %lx\n", (spmpaddr[11] << 2));
+	LOG_WRN("  spmpaddr12: %lx\n", (spmpaddr[12] << 2));
+	LOG_WRN("  spmpaddr13: %lx\n", (spmpaddr[13] << 2));
+	LOG_WRN("  spmpaddr14: %lx\n", (spmpaddr[14] << 2));
+	LOG_WRN("  spmpaddr15: %lx\n", (spmpaddr[15] << 2));
+
+	LOG_WRN("  spmpswitch: %lx", spmpswitch);
+}
 
 
 /**
@@ -80,7 +131,7 @@ LOG_MODULE_REGISTER(mpu);
 static bool set_spmp_entry(unsigned int *index_p, uint8_t perm,
 						uintptr_t start, size_t size,
 						unsigned long *spmp_addr, unsigned long *spmp_cfg,
-						unsigned int index_limit) {
+						unsigned long *spmp_switch, unsigned int index_limit) {
 	uint8_t *spmp_n_cfg = (uint8_t *)spmp_cfg;
 	unsigned int index = *index_p;
 	bool ok = true;
@@ -97,10 +148,12 @@ static bool set_spmp_entry(unsigned int *index_p, uint8_t perm,
 		/* We can use TOR using only one additional slot */
 		spmp_addr[index] = SPMP_ADDR(start + size);
 		spmp_n_cfg[index] = perm | SPMP_TOR;
+		spmp_switch[index/(RV_REGSIZE*8)] |= (1UL << ((index%(RV_REGSIZE*8))));
 		index += 1;
 	} else if (SPMP_NA4_SUPPORTED && size == 4) {
 		spmp_addr[index] = SPMP_ADDR(start);
 		spmp_n_cfg[index] = perm | SPMP_NA4;
+		spmp_switch[index/(RV_REGSIZE*8)] |= (1UL << ((index%(RV_REGSIZE*8))));
 		index += 1;
 	} else if (SPMP_NAPOT_SUPPORTED &&
 			((size & (size - 1)) == 0) /* power of 2 */ &&
@@ -108,6 +161,7 @@ static bool set_spmp_entry(unsigned int *index_p, uint8_t perm,
 			(SPMP_NA4_SUPPORTED || (size != 4))) {
 		spmp_addr[index] = SPMP_ADDR_NAPOT(start, size);
 		spmp_n_cfg[index] = perm | SPMP_NAPOT;
+		spmp_switch[index/(RV_REGSIZE*8)] |= (1UL << ((index%(RV_REGSIZE*8))));
 		index += 1;
 	} else if (SPMP_TOR_SUPPORTED && index + 1 >= index_limit) {
 		LOG_ERR("out of SPMP slots");
@@ -118,6 +172,7 @@ static bool set_spmp_entry(unsigned int *index_p, uint8_t perm,
 		index += 1;
 		spmp_addr[index] = SPMP_ADDR(start + size);
 		spmp_n_cfg[index] = perm | SPMP_TOR;
+		spmp_switch[index/(RV_REGSIZE*8)] |= (1UL << ((index%(RV_REGSIZE*8))));
 		index += 1;
 	} else {
 		LOG_ERR("inappropriate SPMP range (start=%#lx size=%#zx)", start, size);
@@ -142,11 +197,13 @@ static bool set_spmp_entry(unsigned int *index_p, uint8_t perm,
  * @param clear_trailing_entries True if trailing entries must be turned off
  * @param spmp_addr Array of spmpaddr values (starting at entry 0).
  * @param spmp_cfg Array of spmpcfg values (starting at entry 0).
+ * @param spmp_switch spmpswitch value to be written
  */
 extern void z_riscv_write_spmp_entries(unsigned int start, unsigned int end,
 									bool clear_trailing_entries,
 									const unsigned long *spmp_addr,
-									const unsigned long *spmp_cfg);
+									const unsigned long *spmp_cfg,
+									const unsigned long *spmp_switch);
 
 /**
  * @brief Write a range of SPMP entries to corresponding SPMP registers
@@ -163,7 +220,7 @@ extern void z_riscv_write_spmp_entries(unsigned int start, unsigned int end,
 static void write_spmp_entries(unsigned int start, unsigned int end,
 							bool clear_trailing_entries,
 							unsigned long *spmp_addr, unsigned long *spmp_cfg,
-							unsigned int index_limit) {
+							unsigned long *spmp_switch, unsigned int index_limit) {
 	__ASSERT(start < end && end <= index_limit &&
 				index_limit <= CONFIG_SPMP_SLOTS,
 			"bad SPMP range (start=%u end=%u)", start, end);
@@ -185,6 +242,7 @@ static void write_spmp_entries(unsigned int start, unsigned int end,
 
 		for (index = end; index % SPMPCFG_STRIDE != 0; index++) {
 			spmp_n_cfg[index] = 0;
+			*spmp_switch &= ~(1UL << index);
 		}
 	}
 
@@ -202,29 +260,31 @@ static void write_spmp_entries(unsigned int start, unsigned int end,
 	};
 
 	z_riscv_write_spmp_entries(start, CONFIG_SPMP_SLOTS, false,
-							spmp_zero, spmp_zero);
+							spmp_zero, spmp_zero, spmp_zero);
 #endif
 
 	z_riscv_write_spmp_entries(start, end, clear_trailing_entries,
-							spmp_addr, spmp_cfg);
+							spmp_addr, spmp_cfg, spmp_switch);
 }
 
 /**
- * @brief Abstract the last 3 arguments to set_spmp_entry() and
+ * @brief Abstract the last 4 arguments to set_spmp_entry() and
  *        write_spmp_entries for s-mode.
  */
-#define SPMP_S_MODE(thread)               \
-	thread->arch.s_mode_spmpaddr_regs,    \
-		thread->arch.s_mode_spmpcfg_regs, \
+#define SPMP_S_MODE(thread)                 \
+	thread->arch.s_mode_spmpaddr_regs,      \
+		thread->arch.s_mode_spmpcfg_regs,   \
+		thread->arch.s_mode_spmpswitch_reg, \
 		ARRAY_SIZE(thread->arch.s_mode_spmpaddr_regs)
 
 /**
- * @brief Abstract the last 3 arguments to set_spmp_entry() and
+ * @brief Abstract the last 4 arguments to set_spmp_entry() and
  *        write_spmp_entries for u-mode.
  */
-#define SPMP_U_MODE(thread)               \
-	thread->arch.u_mode_spmpaddr_regs,    \
-		thread->arch.u_mode_spmpcfg_regs, \
+#define SPMP_U_MODE(thread)                 \
+	thread->arch.u_mode_spmpaddr_regs,      \
+		thread->arch.u_mode_spmpcfg_regs,   \
+		thread->arch.u_mode_spmpswitch_reg, \
 		ARRAY_SIZE(thread->arch.u_mode_spmpaddr_regs)
 
 /*
@@ -243,23 +303,30 @@ static unsigned int global_spmp_end_index;
 void z_riscv_spmp_init(void) {
 	unsigned long spmp_addr[CONFIG_SPMP_SLOTS];
 	unsigned long spmp_cfg[1];
+	unsigned long spmp_switch[2] = {0, 0};
 	unsigned int index = 0;
 
 	/* The read-only area is always there for every mode, in spmp it's shared read-only */
-	set_spmp_entry(&index, SPMP_S,
+	set_spmp_entry(&index, SPMP_S | SPMP_W | SPMP_X,
 				(uintptr_t)__rom_region_start,
 				(size_t)__rom_region_size,
-				spmp_addr, spmp_cfg, ARRAY_SIZE(spmp_addr));
+				spmp_addr, spmp_cfg, spmp_switch, ARRAY_SIZE(spmp_addr));
+
+	/* Data region: RW */
+	set_spmp_entry(&index, SPMP_W | SPMP_X,
+				(uintptr_t)__kernel_ram_start,
+				(size_t)__kernel_ram_size,
+				spmp_addr, spmp_cfg, spmp_switch, ARRAY_SIZE(spmp_addr));
 
 #ifdef CONFIG_NULL_POINTER_EXCEPTION_DETECTION_SPMP
 	/*
 	* Use a SPMP slot to make region (starting at address 0x0) inaccessible
-	* for detecting null pointer dereferencing.
+	* for detecting null pointer dereferencing
 	*/
 	set_spmp_entry(&index, SPMP_NONE,
 				0,
 				CONFIG_NULL_POINTER_EXCEPTION_REGION_SIZE,
-				spmp_addr, spmp_cfg, ARRAY_SIZE(spmp_addr));
+				spmp_addr, spmp_cfg, spmp_switch, ARRAY_SIZE(spmp_addr));
 #endif
 
 #ifdef CONFIG_SPMP_STACK_GUARD
@@ -270,10 +337,10 @@ void z_riscv_spmp_init(void) {
 	set_spmp_entry(&index, SPMP_NONE,
 				(uintptr_t)z_interrupt_stacks[_current_cpu->id],
 				Z_RISCV_STACK_GUARD_SIZE,
-				spmp_addr, spmp_cfg, ARRAY_SIZE(spmp_addr));
+				spmp_addr, spmp_cfg, spmp_switch, ARRAY_SIZE(spmp_addr));
 #endif
 
-	write_spmp_entries(0, index, true, spmp_addr, spmp_cfg, ARRAY_SIZE(spmp_addr));
+	write_spmp_entries(0, index, true, spmp_addr, spmp_cfg, spmp_switch, ARRAY_SIZE(spmp_addr));
 
 #ifdef CONFIG_SMP
 #ifdef CONFIG_SPMP_STACK_GUARD
@@ -304,8 +371,10 @@ void z_riscv_spmp_init(void) {
  */
 static inline unsigned int z_riscv_spmp_thread_init(unsigned long *spmp_addr,
 												unsigned long *spmp_cfg,
+												unsigned long *spmp_switch,
 												unsigned int index_limit) {
 	ARG_UNUSED(index_limit);
+	ARG_UNUSED(spmp_switch);
 
 	/*
 	* Retrieve spmpcfg0 partial content from global entries.
@@ -426,7 +495,7 @@ static void resync_spmp_domain(struct k_thread *thread,
 			continue;
 		}
 
-		ok = set_spmp_entry(&index, part->attr.spmp_attr,
+		ok = set_spmp_entry(&index, (SPMP_W | SPMP_X),
 						part->start, part->size, SPMP_U_MODE(thread));
 		__ASSERT(ok,
 				"no SPMP slot left for %d remaining partitions in domain %p",
