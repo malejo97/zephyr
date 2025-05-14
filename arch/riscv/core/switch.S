@@ -37,6 +37,8 @@ GTEXT(z_riscv_fpu_thread_context_switch)
 /* void z_riscv_switch(k_thread_t *switch_to, k_thread_t *switch_from) */
 SECTION_FUNC(TEXT, z_riscv_switch)
 
+	/* TODO: Get CS-S cycle stamp */
+
 	/* Save the old thread's callee-saved registers */
 	DO_CALLEE_SAVED(sr, a1)
 
@@ -89,6 +91,8 @@ not_user_task:
 
 	/* Restore the new thread's callee-saved registers */
 	DO_CALLEE_SAVED(lr, a0)
+
+	/* TODO: Get CS-E cycle stamp */
 
 	/* Return to arch_switch() or _irq_wrapper() */
 	ret

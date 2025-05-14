@@ -200,9 +200,8 @@ static bool set_spmp_entry(unsigned int *index_p, uint8_t perm,
  * @param spmp_switch spmpswitch value to be written
  */
 extern void z_riscv_write_spmp_entries(unsigned int start, unsigned int end,
-									bool clear_trailing_entries,
-									const unsigned long *spmp_addr,
 									const unsigned long *spmp_cfg,
+									const unsigned long *spmp_addr,
 									const unsigned long *spmp_switch);
 
 /**
@@ -259,12 +258,12 @@ static void write_spmp_entries(unsigned int start, unsigned int end,
 		0,
 	};
 
-	z_riscv_write_spmp_entries(start, CONFIG_SPMP_SLOTS, false,
+	z_riscv_write_spmp_entries(start, CONFIG_SPMP_SLOTS,
 							spmp_zero, spmp_zero, spmp_zero);
 #endif
 
-	z_riscv_write_spmp_entries(start, end, clear_trailing_entries,
-							spmp_addr, spmp_cfg, spmp_switch);
+	z_riscv_write_spmp_entries(start, end,
+							spmp_cfg, spmp_addr, spmp_switch);
 }
 
 /**
@@ -516,6 +515,8 @@ static void resync_spmp_domain(struct k_thread *thread,
 void z_riscv_spmp_usermode_enable(struct k_thread *thread) {
 	struct k_mem_domain *domain = thread->mem_domain_info.mem_domain;
 
+	/* TODO: Get SPMP-S cycle stamp */
+
 	LOG_DBG("spmp_usermode_enable for thread %p with domain %p", thread, domain);
 
 	if (thread->arch.u_mode_spmp_end_index == 0) {
@@ -535,6 +536,8 @@ void z_riscv_spmp_usermode_enable(struct k_thread *thread) {
 	write_spmp_entries(global_spmp_end_index, thread->arch.u_mode_spmp_end_index,
 					true /* must clear to the end */,
 					SPMP_U_MODE(thread));
+
+	/* TODO: Get SPMP-E cycle stamp */
 
 }
 
