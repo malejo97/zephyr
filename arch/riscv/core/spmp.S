@@ -57,7 +57,7 @@ spmp_store:
 		li t2, (SISELECT_BASE + _index)
 		csrw CSR_SISELECT, t2
 
-		lr t0, (_index/RV_REGSIZE)(a2)
+		lr t0, ((_index/RV_REGSIZE) * RV_REGSIZE)(a2)
 		csrw CSR_SIREG, t0
 
 		lr t0, (RV_REGSIZE * _index)(a3)
