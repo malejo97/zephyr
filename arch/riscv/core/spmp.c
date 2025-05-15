@@ -59,6 +59,27 @@ LOG_MODULE_REGISTER(mpu);
 
 #define SPMP_NONE 0
 
+#define CS_START	0x80600000ULL
+#define CS_END		0x80600008ULL
+#define SPMP_START	0x80600010ULL
+#define SPMP_END	0x80600018ULL
+
+static inline uint64_t read_cycle(void) {
+	uint64_t cycle;
+	__asm__ volatile ("csrr %0, cycle" : "=r" (cycle));
+	return cycle;
+}
+
+void print_cycles(void)
+{
+	LOG_ERR("\n===============================");
+	LOG_ERR("CS start: %lu", *((unsigned long*)CS_START));
+	LOG_ERR("SPMP start: %lu", *((unsigned long*)SPMP_START));
+	LOG_ERR("SPMP end: %lu", *((unsigned long*)SPMP_END));
+	LOG_ERR("CS end: %lu", *((unsigned long*)CS_END));
+	LOG_ERR("===============================\n");
+}
+
 static void print_spmp(void)
 {
 	unsigned long spmpcfg[16];
@@ -262,8 +283,10 @@ static void write_spmp_entries(unsigned int start, unsigned int end,
 							spmp_zero, spmp_zero, spmp_zero);
 #endif
 
+	*((unsigned long*)SPMP_START) = read_cycle();
 	z_riscv_write_spmp_entries(start, end,
 							spmp_cfg, spmp_addr, spmp_switch);
+	*((unsigned long*)SPMP_END) = read_cycle();
 }
 
 /**
@@ -515,8 +538,6 @@ static void resync_spmp_domain(struct k_thread *thread,
 void z_riscv_spmp_usermode_enable(struct k_thread *thread) {
 	struct k_mem_domain *domain = thread->mem_domain_info.mem_domain;
 
-	/* TODO: Get SPMP-S cycle stamp */
-
 	LOG_DBG("spmp_usermode_enable for thread %p with domain %p", thread, domain);
 
 	if (thread->arch.u_mode_spmp_end_index == 0) {
@@ -536,8 +557,6 @@ void z_riscv_spmp_usermode_enable(struct k_thread *thread) {
 	write_spmp_entries(global_spmp_end_index, thread->arch.u_mode_spmp_end_index,
 					true /* must clear to the end */,
 					SPMP_U_MODE(thread));
-
-	/* TODO: Get SPMP-E cycle stamp */
 
 }
 
