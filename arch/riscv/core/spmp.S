@@ -16,6 +16,8 @@
 #define CSR_SISELECT		0x150
 #define CSR_SIREG			0x151
 #define CSR_SIREG2			0x152
+#define CSR_SIREG3			0x153
+#define CSR_SIREG4			0x155
 
 #define SISELECT_BASE		0x0
 
@@ -44,7 +46,10 @@ GTEXT(z_riscv_write_spmp_entries)
 SECTION_FUNC(TEXT, z_riscv_write_spmp_entries)
 
 	la t0, spmp_store
-	slli t1, a0, 5  /* 32-byte instruction blocks */
+	srli a0, a0, 1	// idx / 2
+	slli t1, a0, 5	// idx * 32
+	slli t2, a0, 4	// idx * 16
+	add t1, t1, t2
 	add t0, t0, t1
 	jr t0
 
@@ -53,19 +58,23 @@ spmp_store:
 	.option push
 	.option norvc
 	.set _index, 0
-	.rept CONFIG_SPMP_SLOTS
+	.rept (CONFIG_SPMP_SLOTS/2)
 		li t2, (SISELECT_BASE + _index)
 		csrw CSR_SISELECT, t2
 
-		lr t0, ((_index/RV_REGSIZE) * RV_REGSIZE)(a2)
+		lbu t0, (_index)(a2)
 		csrw CSR_SIREG, t0
+		lbu t0, (_index+1)(a2)
+		csrw CSR_SIREG3, t0
 
 		lr t0, (RV_REGSIZE * _index)(a3)
 		csrw CSR_SIREG2, t0
+		lr t0, (RV_REGSIZE * (_index + 1))(a3)
+		csrw CSR_SIREG4, t0
 
-		li t0, _index + 1
+		li t0, _index + 2
 		beq t0, a1, spmpswitch_store
-		.set _index, _index + 1
+		.set _index, _index + 2
 	.endr
 	.option pop
 
