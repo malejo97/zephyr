@@ -329,7 +329,7 @@ if RISCV_SPMP
 
 config SPMP_SLOTS
 	int "Number of SPMP slots"
-	default 16
+	default 64
 	help
 	  This is the number of SPMP entries implemented by the hardware.
 	  Typical values are 8 or 16.
