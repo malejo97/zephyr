@@ -57,9 +57,9 @@ spmp_store:
 	.option norvc
 	.set _index, 0
 	.rept CONFIG_SPMP_SLOTS
-		li t2, (SISELECT_CFG_BASE + _index/RV_REGSIZE)
+		li t2, (SISELECT_CFG_BASE + (_index/RV_REGSIZE * 2))
 		csrw CSR_SISELECT, t2
-		lr t0, (_index/RV_REGSIZE)(a2)
+		lr t0, ((_index/RV_REGSIZE) * RV_REGSIZE)(a2)
 		csrw CSR_SIREG, t0
 
 		li t2, (SISELECT_ADDR_BASE + _index)
