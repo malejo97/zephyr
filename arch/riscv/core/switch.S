@@ -12,6 +12,9 @@
 #include <zephyr/arch/cpu.h>
 #include "asm_macros.inc"
 
+#define cs_start	0x80600000
+#define cs_end		0x80600008
+
 /* Convenience macros for loading/storing register states. */
 
 #define DO_CALLEE_SAVED(op, reg) \
@@ -37,7 +40,9 @@ GTEXT(z_riscv_fpu_thread_context_switch)
 /* void z_riscv_switch(k_thread_t *switch_to, k_thread_t *switch_from) */
 SECTION_FUNC(TEXT, z_riscv_switch)
 
-	/* TODO: Get CS-S cycle stamp */
+	csrr t0, cycle
+    li   t1, cs_start
+    sd   t0, 0(t1)
 
 	/* Save the old thread's callee-saved registers */
 	DO_CALLEE_SAVED(sr, a1)
@@ -89,10 +94,16 @@ not_user_task:
 	mv a0, s0
 #endif
 
+	csrr t0, cycle
+    li   t1, cs_end
+    sd   t0, 0(t1)
+
+	mv s0, a0
+	call print_cycles
+	mv a0, s0
+
 	/* Restore the new thread's callee-saved registers */
 	DO_CALLEE_SAVED(lr, a0)
-
-	/* TODO: Get CS-E cycle stamp */
 
 	/* Return to arch_switch() or _irq_wrapper() */
 	ret
