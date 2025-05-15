@@ -17,7 +17,8 @@
 #define CSR_SIREG			0x151
 #define CSR_SIREG2			0x152
 
-#define SISELECT_BASE		0x0
+#define SISELECT_CFG_BASE	0x0
+#define SISELECT_ADDR_BASE	0x10
 
 /*
  * Prototype:
@@ -44,7 +45,9 @@ GTEXT(z_riscv_write_spmp_entries)
 SECTION_FUNC(TEXT, z_riscv_write_spmp_entries)
 
 	la t0, spmp_store
-	slli t1, a0, 5  /* 32-byte instruction blocks */
+	slli t1, a0, 5
+	slli t2, a0, 3
+	add t1, t1, t2
 	add t0, t0, t1
 	jr t0
 
@@ -54,14 +57,15 @@ spmp_store:
 	.option norvc
 	.set _index, 0
 	.rept CONFIG_SPMP_SLOTS
-		li t2, (SISELECT_BASE + _index)
+		li t2, (SISELECT_CFG_BASE + _index/RV_REGSIZE)
 		csrw CSR_SISELECT, t2
-
 		lr t0, (_index/RV_REGSIZE)(a2)
 		csrw CSR_SIREG, t0
 
+		li t2, (SISELECT_ADDR_BASE + _index)
+		csrw CSR_SISELECT, t2
 		lr t0, (RV_REGSIZE * _index)(a3)
-		csrw CSR_SIREG2, t0
+		csrw CSR_SIREG, t0
 
 		li t0, _index + 1
 		beq t0, a1, spmpswitch_store
@@ -71,8 +75,6 @@ spmp_store:
 
 spmpswitch_store:
 
-	.option push
-	.option norvc
 	lr t0, 0(a4)
 	csrr t1, CSR_SPMPSWITCH_BASE
 	or t0, t0, t1
@@ -83,7 +85,6 @@ spmpswitch_store:
 	or t0, t0, t1
 	csrw (CSR_SPMPSWITCH_BASE + 1), t0
 #endif
-	.option pop
 
 done:
 	ret
