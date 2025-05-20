@@ -484,18 +484,13 @@ void z_riscv_spmp_usermode_prepare(struct k_thread *thread) {
 				SPMP_U_MODE(thread));
 
 	/* Map dummy entries */
-	set_spmp_entry(&index, SPMP_R | SPMP_W,
-				(uintptr_t)0xDEAD0000,
-				(size_t)0xBEE0,
-				SPMP_U_MODE(thread));
-	set_spmp_entry(&index, SPMP_R | SPMP_W,
-				(uintptr_t)0xDEAD0000,
-				(size_t)0xBEE4,
-				SPMP_U_MODE(thread));
-	set_spmp_entry(&index, SPMP_R | SPMP_W,
-				(uintptr_t)0xDEAD0000,
-				(size_t)0xBEE8,
-				SPMP_U_MODE(thread));
+	for (size_t i = 0; i < 1; i++)
+	{
+		set_spmp_entry(&index, SPMP_R | SPMP_W,
+			(uintptr_t)0xDEAD0000,
+			(size_t)0xBEE0,
+			SPMP_U_MODE(thread));
+	}
 
 	thread->arch.u_mode_spmp_domain_offset = index;
 	thread->arch.u_mode_spmp_end_index = index;
