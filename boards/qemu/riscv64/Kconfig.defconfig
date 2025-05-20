@@ -4,7 +4,7 @@
 if BOARD_QEMU_RISCV64
 
 config BUILD_OUTPUT_BIN
-	default n
+	default y
 
 config HAS_COVERAGE_SUPPORT
 	default y

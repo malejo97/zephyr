@@ -26,6 +26,6 @@ config NUM_IRQS
 	default 1036
 
 config SPMP_SLOTS
-	default 16
+	default 64
 
 endif # SOC_FAMILY_QEMU_VIRT_RISCV
