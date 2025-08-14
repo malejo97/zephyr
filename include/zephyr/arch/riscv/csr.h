@@ -144,7 +144,9 @@
 #define PMP_NA4		0x10
 #define PMP_NAPOT	0x18
 
-#define SPMP_S		0x80
+#define SPMP_SHARED 0x200
+#define SPMP_U		0x100
+#define SPMP_L		0x80
 #define SPMP_A 		0x18
 #define SPMP_X 		0x04
 #define SPMP_W 		0x02

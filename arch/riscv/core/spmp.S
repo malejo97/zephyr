@@ -9,22 +9,21 @@
 #include <zephyr/arch/cpu.h>
 #include "asm_macros.inc"
 
-#define CSR_SPMPCFG_BASE    0x500
-#define CSR_SPMPADDR_BASE   0x510
-#define CSR_SPMPSWITCH_BASE 0x550
-
 #define CSR_SISELECT		0x150
 #define CSR_SIREG			0x151
 #define CSR_SIREG2			0x152
+
+#define CSR_SPMPSWITCH 		0x550
+#define CSR_SPMPSWITCHH 	0x550
 
 #define SISELECT_BASE		0x0
 
 /*
  * Prototype:
  *
- * void z_riscv_write_spmp_entries(unsigned int start,		// a0
- *                                unsigned int end,		// a1
- *                                unsigned long *spmp_cfg,		// a2
+ * void z_riscv_write_spmp_entries(unsigned int start,			// a0
+ *                                unsigned int end,				// a1
+ *                                uint16_t *spmp_cfg,			// a2
  *                                unsigned long *spmp_addr,		// a3
  *                                unsigned long *spmp_switch)	// a4
  *
@@ -57,7 +56,7 @@ spmp_store:
 		li t2, (SISELECT_BASE + _index)
 		csrw CSR_SISELECT, t2
 
-		lbu t0, (_index)(a2)
+		lhu t0, (_index)(a2)
 		csrw CSR_SIREG2, t0
 
 		lr t0, (RV_REGSIZE * _index)(a3)
@@ -74,14 +73,14 @@ spmpswitch_store:
 	.option push
 	.option norvc
 	lr t0, 0(a4)
-	csrr t1, CSR_SPMPSWITCH_BASE
+	csrr t1, CSR_SPMPSWITCH
 	or t0, t0, t1
-	csrw CSR_SPMPSWITCH_BASE, t0
+	csrw CSR_SPMPSWITCH, t0
 #ifndef CONFIG_64BIT
 	lr t0, 4(a5)
-	csrr t1, (CSR_SPMPSWITCH_BASE + 1)
+	csrr t1, CSR_SPMPSWITCHH
 	or t0, t0, t1
-	csrw (CSR_SPMPSWITCH_BASE + 1), t0
+	csrw CSR_SPMPSWITCHH, t0
 #endif
 	.option pop
 

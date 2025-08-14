@@ -74,7 +74,7 @@ struct _thread_arch {
 #ifdef CONFIG_USERSPACE
 	unsigned long priv_stack_start;
 	unsigned long u_mode_spmpaddr_regs[CONFIG_SPMP_SLOTS];
-	unsigned long u_mode_spmpcfg_regs[CONFIG_SPMP_SLOTS / sizeof(unsigned long)];
+	uint16_t u_mode_spmpcfg_regs[CONFIG_SPMP_SLOTS];
 #ifdef CONFIG_64BIT
 	unsigned long u_mode_spmpswitch_reg[1];
 #else
@@ -87,7 +87,7 @@ struct _thread_arch {
 #ifdef CONFIG_SPMP_STACK_GUARD
 	unsigned int s_mode_spmp_end_index;
 	unsigned long s_mode_spmpaddr_regs[SPMP_M_MODE_SLOTS];
-	unsigned long s_mode_spmpcfg_regs[SPMP_M_MODE_SLOTS / sizeof(unsigned long)];
+	uint16_t s_mode_spmpcfg_regs[SPMP_M_MODE_SLOTS];
 #endif
 };
 
