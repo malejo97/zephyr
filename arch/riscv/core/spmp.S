@@ -16,7 +16,7 @@
 #define CSR_SPMPSWITCH 		0x550
 #define CSR_SPMPSWITCHH 	0x550
 
-#define SISELECT_BASE		0x0
+#define SISELECT_BASE		0x100
 
 /*
  * Prototype:
